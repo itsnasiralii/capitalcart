@@ -136,21 +136,13 @@
             <div class="d-flex gap-3 flex-wrap align-items-center mb-3">
                 <button
                     wire:click="addToCart"
-                    class="btn btn-primary btn-lg px-5"
+                    class="btn btn-primary btn-lg px-5 flex-grow-1"
                     @if(!$this->isInStock) disabled @endif
                 >
                     <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="me-2" style="vertical-align:-3px">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
                     {{ $this->isInStock ? 'Add to Cart' : 'Out of Stock' }}
-                </button>
-
-                <button
-                    wire:click="buyNow"
-                    class="btn btn-dark btn-lg px-4"
-                    @if(!$this->isInStock) disabled @endif
-                >
-                    Buy Now
                 </button>
 
                 {{-- Wishlist --}}
@@ -165,16 +157,30 @@
                 </button>
             </div>
 
-            @php
-                $productWaMsg = "Assalam-o-Alaikum! I want to order this product:\n\n*Product:* " . $product->name . "\n*Price:* Rs. " . number_format($this->effectivePrice, 0) . "\n*Qty:* " . $quantity . "\n*Link:* " . request()->fullUrl();
-                $productWaUrl = "https://wa.me/" . preg_replace('/[^0-9]/', '', env('WHATSAPP_NUMBER', '923453904084')) . "?text=" . rawurlencode($productWaMsg);
-            @endphp
-            <div class="mb-3">
-                <a href="{{ $productWaUrl }}" target="_blank" class="btn btn-outline-success w-100 py-2 d-flex align-items-center justify-content-center gap-2 fw-semibold" style="border-color:#25D366;color:#15803d">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.099.824zm-3.392-10.416c-4.418 0-8 3.582-8 8 0 1.579.46 3.05 1.258 4.29l-1.297 4.743 4.887-1.282c1.206.732 2.618 1.157 4.131 1.157 4.418 0 8-3.582 8-8s-3.582-8-8-8z"/></svg>
-                    Direct Order on WhatsApp
-                </a>
-            </div>
+            {{-- Direct Order on WhatsApp --}}
+            @if($this->isInStock)
+                @php
+                    $variantName = '';
+                    if ($product->is_variable && $selectedVariantId) {
+                        $v = $product->variants->firstWhere('id', $selectedVariantId);
+                        $variantName = $v ? ' (' . $v->variantAttributes->pluck('value')->implode(', ') . ')' : '';
+                    }
+                    $productWaMsg = "Assalam-o-Alaikum CapitalCart!\nI want to order this product:\n\n*Product:* " . $product->name . $variantName . "\n*Price:* Rs. " . number_format($this->effectivePrice, 0) . "\n*Qty:* " . $quantity . "\n*Link:* " . request()->fullUrl();
+                    $productWaUrl = \App\Models\Setting::getWhatsAppUrl($productWaMsg);
+                @endphp
+                <div class="mb-3">
+                    <a href="{{ $productWaUrl }}" target="_blank" class="btn btn-outline-success w-100 py-2 d-flex align-items-center justify-content-center gap-2 fw-semibold" style="border-color:#25D366;color:#15803d">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.099.824zm-3.392-10.416c-4.418 0-8 3.582-8 8 0 1.579.46 3.05 1.258 4.29l-1.297 4.743 4.887-1.282c1.206.732 2.618 1.157 4.131 1.157 4.418 0 8-3.582 8-8s-3.582-8-8-8z"/></svg>
+                        Direct Order on WhatsApp
+                    </a>
+                </div>
+            @else
+                <div class="mb-3">
+                    <button type="button" class="btn btn-outline-secondary w-100 py-2 d-flex align-items-center justify-content-center gap-2" disabled>
+                        Direct Order on WhatsApp (Out of Stock)
+                    </button>
+                </div>
+            @endif
 
             {{-- SKU & Category --}}
             <div class="mt-3 pt-3 border-top">

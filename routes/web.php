@@ -52,6 +52,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/products/create', \App\Livewire\Admin\Products\ProductForm::class)->name('products.create');
     Route::get('/products/{id}/edit', \App\Livewire\Admin\Products\ProductForm::class)->name('products.edit');
     Route::get('/products/{id}/inventory', \App\Livewire\Admin\Products\InventoryManager::class)->name('products.inventory');
+    Route::get('/categories', \App\Livewire\Admin\Categories\CategoryManager::class)->name('categories.index');
+    Route::get('/hero-slides', \App\Livewire\Admin\HeroSlides\SlideList::class)->name('hero-slides.index');
     Route::get('/orders', \App\Livewire\Admin\Orders\OrderList::class)->name('orders.index');
     Route::get('/orders/{id}', \App\Livewire\Admin\Orders\OrderDetail::class)->name('orders.show');
+    Route::get('/newsletter', \App\Livewire\Admin\Newsletter\SubscriberList::class)->name('newsletter.index');
+    Route::get('/settings', \App\Livewire\Admin\Settings\StoreSettings::class)->name('settings.index');
 });

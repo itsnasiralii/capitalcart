@@ -43,6 +43,14 @@
                 @endforeach
             </ul>
             <div class="d-flex align-items-center gap-3">
+                {{-- Live Visitor Counter --}}
+                @if(setting('show_visitor_counter', 1))
+                    <span class="badge bg-white text-dark border d-none d-lg-inline-flex align-items-center gap-1" style="font-size:0.75rem;padding:0.4rem 0.65rem">
+                        <span style="width:7px;height:7px;border-radius:50%;background:#22C55E;display:inline-block"></span>
+                        <strong>{{ \App\Models\ActiveVisitor::getActiveCount() }}</strong> shoppers online
+                    </span>
+                @endif
+
                 {{-- Cart Icon --}}
                 <livewire:cart.cart-icon />
 
@@ -55,11 +63,9 @@
                     </a>
                 @endauth
 
-                {{-- Auth --}}
+                {{-- Customer Auth --}}
                 @auth
-                    @if(auth()->user()->is_admin)
-                        <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-outline-light">Admin</a>
-                    @endif
+                    <span class="text-white-50 small d-none d-md-inline">{{ auth()->user()->name }}</span>
                     <form action="{{ route('logout') }}" method="POST" class="d-inline">
                         @csrf
                         <button class="btn btn-sm btn-outline-light">Logout</button>
@@ -72,6 +78,9 @@
         </div>
     </div>
 </nav>
+
+{{-- Recent Orders Activity Bar --}}
+<livewire:recent-orders />
 
 {{-- Cart Sidebar --}}
 <livewire:cart.cart-sidebar />
@@ -131,10 +140,7 @@
             <div class="col-lg-4">
                 <h5>Newsletter</h5>
                 <p class="small" style="color:rgba(255,255,255,0.55)">Get exclusive deals and updates straight to your inbox.</p>
-                <div class="input-group">
-                    <input type="email" class="form-control" placeholder="Your email address">
-                    <button class="btn" style="background:#F97316;color:#fff">Subscribe</button>
-                </div>
+                <livewire:newsletter-box />
             </div>
         </div>
         <div class="footer-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">

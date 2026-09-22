@@ -142,23 +142,6 @@ class ProductDetail extends Component
         $this->dispatch('show-toast', message: 'Added to cart!', type: 'success');
     }
 
-    public function buyNow(CartService $cart): void
-    {
-        if ($this->product->is_variable && !$this->selectedVariantId) {
-            $this->dispatch('show-toast', message: 'Please select all options first.', type: 'warning');
-            return;
-        }
-
-        if (!$this->isInStock) {
-            $this->dispatch('show-toast', message: 'This item is out of stock.', type: 'error');
-            return;
-        }
-
-        $cart->add($this->product->id, $this->selectedVariantId, $this->quantity);
-        $this->dispatch('cart-updated');
-        $this->redirect(route('checkout'));
-    }
-
     public function toggleWishlist(): void
     {
         if (!auth()->check()) {

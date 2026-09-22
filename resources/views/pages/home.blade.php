@@ -27,23 +27,8 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-6 mt-5 mt-lg-0 text-center d-none d-lg-block">
-                    <div style="position:relative;display:inline-block">
-                        <div style="width:420px;height:420px;border-radius:50%;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;margin:0 auto">
-                            <div style="width:350px;height:350px;border-radius:50%;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center">
-                                <img src="https://picsum.photos/seed/hero-main/320/320" style="width:280px;height:280px;object-fit:cover;border-radius:50%;border:4px solid rgba(255,255,255,0.2)">
-                            </div>
-                        </div>
-                        {{-- Floating cards --}}
-                        <div style="position:absolute;top:20px;right:-20px;background:#fff;border-radius:0.75rem;padding:0.75rem 1rem;box-shadow:0 8px 25px rgba(0,0,0,0.15);min-width:140px">
-                            <div style="font-size:0.7rem;color:#6B7280">Today's Deal</div>
-                            <div style="font-weight:700;color:#0F172A;font-size:0.9rem">Up to 50% OFF</div>
-                        </div>
-                        <div style="position:absolute;bottom:30px;left:-20px;background:#fff;border-radius:0.75rem;padding:0.75rem 1rem;box-shadow:0 8px 25px rgba(0,0,0,0.15);min-width:140px">
-                            <div style="font-size:0.7rem;color:#6B7280">Free Shipping</div>
-                            <div style="font-weight:700;color:#0F172A;font-size:0.9rem">Orders over Rs. 2,000</div>
-                        </div>
-                    </div>
+                <div class="col-lg-6 mt-5 mt-lg-0 text-center">
+                    <livewire:hero-slider />
                 </div>
             </div>
         </div>

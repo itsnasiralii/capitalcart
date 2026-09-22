@@ -98,7 +98,7 @@
                     <label class="form-label">Status</label>
                     <select wire:model="newStatus" class="form-select">
                         @foreach(\App\Models\Order::STATUSES as $s)
-                            <option value="{{ $s }}">{{ ucfirst($s) }}</option>
+                            <option value="{{ $s }}">{{ ucwords(str_replace('_', ' ', $s)) }}</option>
                         @endforeach
                     </select>
                 </div>

@@ -139,7 +139,7 @@
 
                 {{-- Pagination --}}
                 <div class="mt-4">
-                    {{ $this->products->links() }}
+                    {{ $this->products->links('components.custom-pagination') }}
                 </div>
             @endif
         </div>

@@ -104,7 +104,31 @@ class CartService
     public function getShipping(): float
     {
         if (empty($this->getItems())) return 0;
-        return $this->getSubtotal() >= self::SHIPPING_THRESHOLD ? 0 : self::SHIPPING_COST;
+        $threshold = (float) \App\Models\Setting::get('free_shipping_threshold', 2000);
+        $cost = (float) \App\Models\Setting::get('shipping_cost', 200);
+
+        return $this->getSubtotal() >= $threshold ? 0 : $cost;
+    }
+
+    public function validateStock(): array
+    {
+        $outOfStock = [];
+
+        foreach ($this->getItems() as $key => $item) {
+            if ($item['variant_id']) {
+                $variant = ProductVariant::find($item['variant_id']);
+                if (!$variant || $variant->stock_quantity < $item['quantity']) {
+                    $outOfStock[] = $item['name'] . ($item['variant_label'] ? " ({$item['variant_label']})" : '');
+                }
+            } else {
+                $product = Product::find($item['product_id']);
+                if (!$product || $product->stock_quantity < $item['quantity']) {
+                    $outOfStock[] = $item['name'];
+                }
+            }
+        }
+
+        return $outOfStock;
     }
 
     public function getTax(): float
@@ -120,6 +144,11 @@ class CartService
     public function getItemCount(): int
     {
         return array_sum(array_column($this->getItems(), 'quantity'));
+    }
+
+    public function getCount(): int
+    {
+        return $this->getItemCount();
     }
 
     public function applyCoupon(string $code): bool|string
