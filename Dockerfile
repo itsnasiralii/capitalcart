@@ -1,0 +1,79 @@
+# ==============================================================================
+# Multi-Stage Dockerfile for CapitalCart.pk on Render.com
+# ==============================================================================
+
+# Stage 1: Frontend Asset Compilation (Vite)
+FROM node:20-alpine AS frontend
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --silent
+COPY . .
+RUN npm run build
+
+# Stage 2: PHP 8.3 + Nginx + Production Runtime
+FROM php:8.3-fpm-alpine
+
+# Install OS dependencies, Nginx, Supervisor, and database development libraries
+RUN apk add --no-cache \
+    nginx \
+    supervisor \
+    curl \
+    git \
+    zip \
+    unzip \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    libzip-dev \
+    icu-dev \
+    postgresql-dev \
+    sqlite-dev \
+    oniguruma-dev \
+    libxml2-dev
+
+# Configure and install PHP extensions (supports MySQL, PostgreSQL, SQLite)
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        pdo \
+        pdo_mysql \
+        pdo_pgsql \
+        pdo_sqlite \
+        mbstring \
+        zip \
+        bcmath \
+        intl \
+        opcache \
+        gd \
+        xml \
+        pcntl
+
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy application source code
+COPY . .
+
+# Copy Vite-compiled production assets from frontend stage
+COPY --from=frontend /app/public/build ./public/build
+
+# Install PHP production dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+# Copy container configurations
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Set directory permissions
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Expose standard web port
+EXPOSE 80
+
+# Run entrypoint script
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

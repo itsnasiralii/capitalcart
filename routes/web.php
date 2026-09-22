@@ -35,6 +35,10 @@ Route::get('/order-confirmation/{orderNumber}', function (string $orderNumber) {
     return view('pages.order-confirmation', compact('order'));
 })->name('order.confirmation');
 
+Route::get('/portfolio', function () {
+    return view('pages.portfolio');
+})->name('portfolio');
+
 // Auth
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');

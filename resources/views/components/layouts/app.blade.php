@@ -41,6 +41,11 @@
                     <a class="nav-link" href="{{ route('shop', ['category' => $cat->slug]) }}">{{ $cat->name }}</a>
                 </li>
                 @endforeach
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('portfolio') ? 'active' : '' }}" href="{{ route('portfolio') }}">
+                        <span class="badge rounded-pill me-1" style="background:#F97316;color:#fff;font-size:0.65rem">Dev</span>About Developer
+                    </a>
+                </li>
             </ul>
             <div class="d-flex align-items-center gap-3">
                 {{-- Live Visitor Counter --}}
@@ -136,6 +141,7 @@
                 <a href="{{ route('register') }}">Register</a>
                 <a href="{{ route('cart') }}">Your Cart</a>
                 <a href="{{ route('wishlist') }}">Wishlist</a>
+                <a href="{{ route('portfolio') }}" class="fw-semibold" style="color:#F97316">★ About Developer</a>
             </div>
             <div class="col-lg-4">
                 <h5>Newsletter</h5>

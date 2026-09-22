@@ -1,0 +1,11 @@
+.git
+.github
+node_modules
+tests
+storage/*.key
+.env
+.env.*
+!.env.example
+docker-compose.yml
+phpunit.xml
+README.md
