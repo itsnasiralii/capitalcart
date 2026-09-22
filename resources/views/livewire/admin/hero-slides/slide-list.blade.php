@@ -141,12 +141,27 @@
                                 <span class="spinner-border spinner-border-sm me-1"></span> Processing image...
                             </div>
 
-                            @if ($image)
+                            @php
+                                $tempUrl = null;
+                                if ($image) {
+                                    try {
+                                        $tempUrl = $image->temporaryUrl();
+                                    } catch (\Throwable $e) {
+                                        $tempUrl = null;
+                                    }
+                                }
+                            @endphp
+
+                            @if ($tempUrl)
                                 <div class="mt-2 text-center">
                                     <small class="text-muted d-block mb-1">Circular preview:</small>
                                     <div style="width:110px;height:110px;border-radius:50%;overflow:hidden;border:3px solid #F97316;margin:0 auto">
-                                        <img src="{{ $image->temporaryUrl() }}" style="width:100%;height:100%;object-fit:cover">
+                                        <img src="{{ $tempUrl }}" style="width:100%;height:100%;object-fit:cover">
                                     </div>
+                                </div>
+                            @elseif ($image)
+                                <div class="mt-2 text-center">
+                                    <small class="text-success d-block mb-1">✓ File ready for upload: {{ is_string($image) ? $image : $image->getClientOriginalName() }}</small>
                                 </div>
                             @elseif ($existingImagePath)
                                 <div class="mt-2 text-center">

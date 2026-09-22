@@ -165,10 +165,25 @@
                                 <span class="spinner-border spinner-border-sm me-1"></span> Uploading preview...
                             </div>
 
-                            @if ($image)
+                            @php
+                                $catTempUrl = null;
+                                if ($image) {
+                                    try {
+                                        $catTempUrl = $image->temporaryUrl();
+                                    } catch (\Throwable $e) {
+                                        $catTempUrl = null;
+                                    }
+                                }
+                            @endphp
+
+                            @if ($catTempUrl)
                                 <div class="mt-2">
                                     <small class="text-muted d-block mb-1">New image preview:</small>
-                                    <img src="{{ $image->temporaryUrl() }}" style="width:100px;height:70px;object-fit:cover;border-radius:6px;border:1px solid #CBD5E1">
+                                    <img src="{{ $catTempUrl }}" style="width:100px;height:70px;object-fit:cover;border-radius:6px;border:1px solid #CBD5E1">
+                                </div>
+                            @elseif ($image)
+                                <div class="mt-2">
+                                    <small class="text-success d-block mb-1">✓ File ready for upload: {{ is_string($image) ? $image : $image->getClientOriginalName() }}</small>
                                 </div>
                             @elseif ($existingImageUrl)
                                 <div class="mt-2">

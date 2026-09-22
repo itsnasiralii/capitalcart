@@ -87,7 +87,7 @@ class CategoryManager extends Component
             'description' => 'nullable|string|max:1000',
             'sort_order'  => 'required|integer|min:0|max:9999',
             'is_active'   => 'boolean',
-            'image'       => 'nullable|image|max:2048', // max 2MB
+            'image'       => 'nullable|mimes:jpeg,jpg,png,webp,avif,gif|max:5120',
         ]);
 
         $imageUrl = $this->existingImageUrl;

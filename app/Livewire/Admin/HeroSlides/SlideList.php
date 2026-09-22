@@ -50,7 +50,7 @@ class SlideList extends Component
 
     public function saveSlide(): void
     {
-        $imageRule = $this->isEditing ? 'nullable|image|max:3072' : 'required|image|max:3072';
+        $imageRule = $this->isEditing ? 'nullable|mimes:jpeg,jpg,png,webp,avif,gif|max:5120' : 'required|mimes:jpeg,jpg,png,webp,avif,gif|max:5120';
 
         $this->validate([
             'title'       => 'required|string|max:150',
