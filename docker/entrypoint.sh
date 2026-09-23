@@ -38,8 +38,15 @@ php artisan storage:link --force || true
 echo "Running database migrations..."
 php artisan migrate --force || true
 
-# Seed database with initial categories, products, admin and portfolio
-php artisan db:seed --force || true
+# Seed database only if it is empty (prevents duplicate data on restarts)
+echo "Checking if database needs seeding..."
+USER_COUNT=$(php artisan tinker --execute="echo \App\Models\User::count();" 2>/dev/null | tail -1 | tr -d '[:space:]')
+if [ "$USER_COUNT" = "0" ] || [ -z "$USER_COUNT" ]; then
+    echo "Database is empty, seeding now..."
+    php artisan db:seed --force || true
+else
+    echo "Database already has $USER_COUNT user(s), skipping seed."
+fi
 
 # Production optimization caches
 php artisan config:clear || true
