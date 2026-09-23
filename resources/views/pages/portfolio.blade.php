@@ -23,7 +23,7 @@
 @push('styles')
 <style>
     /* Dark Futuristic Aesthetic Variables */
-    :root {
+    :root, body, .portfolio-container-wrapper {
         --pf-bg-dark: #070B14;
         --pf-bg-surface: #0D1527;
         --pf-card-bg: rgba(13, 21, 39, 0.7);
@@ -35,8 +35,8 @@
         --pf-glow: 0 0 25px rgba(0, 210, 255, 0.25);
     }
 
-    body {
-        background-color: var(--pf-bg-dark) !important;
+    html, body, .portfolio-container-wrapper {
+        background-color: #070B14 !important;
         color: #E2E8F0 !important;
         overflow-x: hidden;
     }
@@ -193,6 +193,8 @@
 }
 </script>
 @endpush
+
+<div class="portfolio-container-wrapper" style="background-color: #070B14 !important; color: #E2E8F0 !important; min-height: 100vh; position: relative; overflow-x: hidden;">
 
 {{-- ============================================================================== --}}
 {{-- HERO SECTION WITH NETWORK NODE CONSTELLATION --}}
@@ -674,6 +676,7 @@
         </div>
     </div>
 </section>
+</div>
 
 @push('scripts')
 <script>

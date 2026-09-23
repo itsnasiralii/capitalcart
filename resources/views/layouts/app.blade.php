@@ -11,8 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.scss', 'resources/js/app.js'])
     @livewireStyles
+    @stack('styles')
 </head>
-<body>
+<body class="{{ request()->routeIs('portfolio') ? 'portfolio-mode' : '' }}" style="{{ request()->routeIs('portfolio') ? 'background-color: #070B14 !important; color: #E2E8F0 !important;' : '' }}">
 
 {{-- Navbar --}}
 <nav class="navbar navbar-marketory navbar-expand-lg sticky-top">
@@ -101,6 +102,7 @@
 </main>
 
 {{-- Footer --}}
+@if(!request()->routeIs('portfolio'))
 <footer class="footer mt-5">
     <div class="container">
         <div class="row g-4">
@@ -139,7 +141,16 @@
         </div>
     </div>
 </footer>
+@else
+<footer class="py-4 text-center mt-0" style="background: #04070D; border-top: 1px solid rgba(0, 242, 254, 0.15); color: #94A3B8;">
+    <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+        <span class="small">&copy; {{ date('Y') }} Nasir Ali — Corporate NOC Engineer &amp; Software Developer.</span>
+        <span class="small"><a href="{{ route('home') }}" class="text-decoration-none fw-semibold" style="color: #00F2FE;">&larr; Back to CapitalCart.pk Store</a> &bull; Islamabad, Pakistan</span>
+    </div>
+</footer>
+@endif
 
 @livewireScripts
+@stack('scripts')
 </body>
 </html>
