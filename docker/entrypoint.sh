@@ -34,16 +34,19 @@ fi
 # Storage symlink
 php artisan storage:link --force || true
 
+# Run database migrations unconditionally
+echo "Running database migrations..."
+php artisan migrate --force || true
+
+# Seed database with initial categories, products, admin and portfolio
+php artisan db:seed --force || true
+
 # Production optimization caches
-php artisan config:cache || true
+php artisan config:clear || true
+php artisan cache:clear || true
 php artisan route:cache || true
 php artisan view:cache || true
-
-# Run database migrations
-if [ "$RUN_MIGRATIONS" = "true" ] || [ "$APP_ENV" = "production" ]; then
-    echo "Running database migrations..."
-    php artisan migrate --force || true
-fi
+php artisan config:cache || true
 
 # Execute supervisor to start PHP-FPM and Nginx
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
