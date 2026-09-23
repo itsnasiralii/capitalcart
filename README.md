@@ -185,7 +185,7 @@ After running `php artisan db:seed`, the following accounts are ready to use.
 | Name      | Email                   | Password              |
 | --------- | ----------------------- | --------------------- |
 | Nasir Ali | nasirali@capitalcart.pk | `nasirali123`         |
-| Joy       | joynsw100@gmail.com     | `joynsw100@gmail.com` |
+| Nasir Ali | nasir@capitalcart.pk    | `NasirAli@123`        |
 
 Log in at `/login` and you'll be redirected to `/admin/dashboard` automatically.
 
