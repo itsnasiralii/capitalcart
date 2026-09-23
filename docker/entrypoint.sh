@@ -3,9 +3,15 @@ set -e
 
 # Support Render dynamic PORT
 if [ -n "$PORT" ]; then
-    sed -i "s/listen 80;/listen $PORT;/g" /etc/nginx/conf.d/default.conf
-    sed -i "s/listen \[::\]:80;/listen \[::\]:$PORT;/g" /etc/nginx/conf.d/default.conf
+    sed -i "s/listen 80;/listen $PORT;/g" /etc/nginx/nginx.conf
+    sed -i "s/listen \[::\]:80;/listen \[::\]:$PORT;/g" /etc/nginx/nginx.conf
 fi
+
+# Ensure no conflicting default configs remain
+rm -rf /etc/nginx/conf.d/* /etc/nginx/http.d/*
+
+# Verify Nginx configuration syntax
+nginx -t
 
 # Ensure storage directories exist and have proper permissions
 mkdir -p /var/www/html/storage/framework/sessions \
