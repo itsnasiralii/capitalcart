@@ -1,6 +1,27 @@
 #!/bin/sh
 set -e
 
+# Parse DATABASE_URL into individual DB_* variables (Render provides DATABASE_URL)
+# Format: postgresql://username:password@host:port/dbname
+if [ -n "$DATABASE_URL" ]; then
+    # Strip the scheme (postgres:// or postgresql://)
+    DB_URL_STRIPPED=$(echo "$DATABASE_URL" | sed 's|^postgresql://||;s|^postgres://||')
+    # Extract user:password
+    DB_USERINFO=$(echo "$DB_URL_STRIPPED" | cut -d'@' -f1)
+    # Extract host:port/dbname
+    DB_HOSTINFO=$(echo "$DB_URL_STRIPPED" | cut -d'@' -f2)
+
+    export DB_CONNECTION=pgsql
+    export DB_USERNAME=$(echo "$DB_USERINFO" | cut -d':' -f1)
+    export DB_PASSWORD=$(echo "$DB_USERINFO" | cut -d':' -f2)
+    export DB_HOST=$(echo "$DB_HOSTINFO" | cut -d':' -f1)
+    export DB_PORT=$(echo "$DB_HOSTINFO" | cut -d':' -f2 | cut -d'/' -f1)
+    export DB_DATABASE=$(echo "$DB_HOSTINFO" | cut -d'/' -f2)
+    export DB_SSLMODE=require
+
+    echo "Database configured: host=$DB_HOST port=$DB_PORT db=$DB_DATABASE user=$DB_USERNAME"
+fi
+
 # Support Render dynamic PORT
 if [ -n "$PORT" ]; then
     sed -i "s/listen 80;/listen $PORT;/g" /etc/nginx/nginx.conf
