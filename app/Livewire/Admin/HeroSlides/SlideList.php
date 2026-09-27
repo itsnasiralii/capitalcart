@@ -3,6 +3,9 @@
 namespace App\Livewire\Admin\HeroSlides;
 
 use App\Models\HeroSlide;
+use App\Services\ImageStorage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
@@ -50,47 +53,51 @@ class SlideList extends Component
 
     public function saveSlide(): void
     {
-        $imageRule = $this->isEditing ? 'nullable|mimes:jpeg,jpg,png,webp,avif,gif|max:5120' : 'required|mimes:jpeg,jpg,png,webp,avif,gif|max:5120';
+        $imageRule = array_merge([$this->isEditing ? 'nullable' : 'required'], array_slice(ImageStorage::rules(), 1));
 
         $this->validate([
             'title'       => 'required|string|max:150',
             'subtitle'    => 'nullable|string|max:255',
             'button_text' => 'required|string|max:50',
-            'link_url'    => 'required|string|max:255',
+            'link_url'    => ['nullable', 'string', 'max:255', function ($attribute, $value, $fail) {
+                $relative = preg_match('#^/(?!/)[^\\\\\\s]*$#', $value);
+                $absolute = filter_var($value, FILTER_VALIDATE_URL)
+                    && in_array(strtolower(parse_url($value, PHP_URL_SCHEME) ?? ''), ['http', 'https'], true);
+                if ($value && !$relative && !$absolute) {
+                    $fail('Use a store path such as /shop or an http(s) URL.');
+                }
+            }],
             'sort_order'  => 'required|integer|min:0|max:9999',
             'is_active'   => 'boolean',
             'image'       => $imageRule,
         ]);
 
-        $imagePath = $this->existingImagePath;
-
-        if ($this->image) {
-            // Delete old file if local
-            if ($this->existingImagePath && !str_starts_with($this->existingImagePath, 'http')) {
-                $cleanOld = str_replace(['storage/', '/storage/'], '', $this->existingImagePath);
-                Storage::disk('public')->delete($cleanOld);
-            }
-
-            $stored = $this->image->store('hero-slides', 'public');
-            $imagePath = $stored;
+        try {
+            DB::transaction(function () {
+                $slide = $this->editingSlideId ? HeroSlide::findOrFail($this->editingSlideId) : new HeroSlide;
+                $imagePath = $this->image ? app(ImageStorage::class)->store($this->image) : $slide->image_path;
+                $slide->fill([
+                    'title' => $this->title,
+                    'subtitle' => $this->subtitle ?: null,
+                    'button_text' => $this->button_text,
+                    'link_url' => $this->link_url ?: '/shop',
+                    'sort_order' => $this->sort_order,
+                    'is_active' => $this->is_active,
+                    'image_path' => $imagePath,
+                ])->save();
+            });
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            report($exception);
+            $this->addError('image', 'The slide could not be saved. Your previous image is unchanged. Please retry.');
+            return;
         }
 
-        HeroSlide::updateOrCreate(
-            ['id' => $this->editingSlideId],
-            [
-                'title'       => $this->title,
-                'subtitle'    => $this->subtitle ?: null,
-                'button_text' => $this->button_text,
-                'link_url'    => $this->link_url,
-                'sort_order'  => $this->sort_order,
-                'is_active'   => $this->is_active,
-                'image_path'  => $imagePath,
-            ]
-        );
-
+        $message = $this->isEditing ? 'Hero slide updated successfully!' : 'Hero slide added successfully!';
         $this->dispatch('close-slide-modal');
         $this->resetForm();
-        $this->dispatch('show-toast', message: $this->isEditing ? 'Hero slide updated successfully!' : 'Hero slide added successfully!', type: 'success');
+        $this->dispatch('show-toast', message: $message, type: 'success');
     }
 
     public function toggleStatus(int $id): void
@@ -106,7 +113,7 @@ class SlideList extends Component
     {
         $slide = HeroSlide::findOrFail($id);
 
-        if ($slide->image_path && !str_starts_with($slide->image_path, 'http')) {
+        if ($slide->image_path && !str_starts_with($slide->image_path, 'http') && !str_starts_with($slide->image_path, '/media/')) {
             $cleanPath = str_replace(['storage/', '/storage/'], '', $slide->image_path);
             Storage::disk('public')->delete($cleanPath);
         }

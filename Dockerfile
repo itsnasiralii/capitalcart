@@ -23,6 +23,7 @@ RUN apk add --no-cache \
     unzip \
     libpng-dev \
     libjpeg-turbo-dev \
+    libwebp-dev \
     freetype-dev \
     libzip-dev \
     icu-dev \
@@ -32,7 +33,7 @@ RUN apk add --no-cache \
     libxml2-dev
 
 # Configure and install PHP extensions (supports MySQL, PostgreSQL, SQLite)
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j$(nproc) \
         pdo \
         pdo_mysql \
@@ -44,6 +45,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         intl \
         opcache \
         gd \
+        exif \
         xml \
         pcntl
 

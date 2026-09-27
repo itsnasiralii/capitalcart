@@ -1,20 +1,23 @@
 <div class="hero-circular-slider-container" id="capitalHeroSlider" data-autoplay="{{ $autoplayDuration * 1000 }}" style="position:relative;display:inline-block;max-width:100%">
     {{-- Concentric Glow Rings (Preserving existing visual layout) --}}
-    <div class="glow-ring-outer" style="width:clamp(290px, 46vw, 420px);height:clamp(290px, 46vw, 420px);border-radius:50%;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;margin:0 auto;position:relative">
-        <div class="glow-ring-inner" style="width:clamp(250px, 39vw, 350px);height:clamp(250px, 39vw, 350px);border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center">
+    <div class="glow-ring-outer" style="width:min(420px,calc(100vw - 48px));aspect-ratio:1;border-radius:50%;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;margin:0 auto;position:relative">
+        <div class="glow-ring-inner" style="width:84%;height:84%;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center">
 
             {{-- Main Circular Frame --}}
-            <div class="circle-frame" style="width:clamp(210px, 32vw, 280px);height:clamp(210px, 32vw, 280px);border-radius:50%;overflow:hidden;border:4px solid rgba(255,255,255,0.25);position:relative;box-shadow:0 12px 35px rgba(0,0,0,0.3);background:#0F172A">
+            <div class="circle-frame" style="width:80%;height:80%;border-radius:50%;overflow:hidden;border:4px solid rgba(255,255,255,0.25);position:relative;box-shadow:0 12px 35px rgba(0,0,0,0.3);background:#0F172A">
                 @if($slides->isNotEmpty())
                     @foreach($slides as $index => $slide)
                         <div class="hero-slide-item {{ $index === 0 ? 'active' : '' }}" data-index="{{ $index }}" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:{{ $index === 0 ? '1' : '0' }};transition:opacity 0.6s ease-in-out;z-index:{{ $index === 0 ? '2' : '1' }}">
                             <a href="{{ $slide->link_url }}" style="display:block;width:100%;height:100%;position:relative">
-                                <img src="{{ $slide->image_url }}" alt="{{ $slide->title }}" style="width:100%;height:100%;object-fit:cover;display:block">
+                                <img src="{{ $slide->image_url }}" alt="{{ $slide->title }}" decoding="async" onerror="this.onerror=null;this.src='{{ asset('images/hero-fallback.svg') }}'" style="width:100%;height:100%;object-fit:cover;display:block">
                                 {{-- Subtle gradient overlay for text readability if needed --}}
                                 <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top, rgba(15,23,42,0.8) 0%, transparent 60%);padding:10px 12px 14px;text-align:center">
                                     <div class="text-white fw-bold" style="font-size:clamp(0.75rem, 2vw, 0.9rem);line-height:1.2;text-shadow:0 1px 4px rgba(0,0,0,0.6)">{{ $slide->title }}</div>
                                     @if($slide->subtitle)
                                         <div class="text-white-50" style="font-size:clamp(0.65rem, 1.5vw, 0.75rem);margin-top:2px">{{ $slide->subtitle }}</div>
+                                    @endif
+                                    @if($slide->button_text)
+                                        <span class="badge bg-primary mt-1">{{ $slide->button_text }}</span>
                                     @endif
                                 </div>
                             </a>
@@ -23,7 +26,7 @@
                 @else
                     {{-- Fallback Image --}}
                     <div style="position:absolute;top:0;left:0;width:100%;height:100%">
-                        <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=600&fit=crop" alt="CapitalCart Store" style="width:100%;height:100%;object-fit:cover">
+                        <img src="{{ asset('images/hero-fallback.svg') }}" alt="CapitalCart Store" style="width:100%;height:100%;object-fit:cover">
                     </div>
                 @endif
             </div>

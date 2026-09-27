@@ -1,4 +1,7 @@
-<div>
+<div x-data="{ uploads: 0, syncFailed: false }"
+     x-on:catalog-upload-start.window="uploads++"
+     x-on:catalog-upload-finish.window="uploads = Math.max(0, uploads - 1)"
+     x-on:catalog-upload-sync-failed.window="syncFailed = true">
     <div class="d-flex align-items-center gap-3 mb-4">
         <a href="{{ route('admin.products.index') }}" class="btn btn-sm btn-outline-secondary">← Back</a>
         <h4 class="font-poppins fw-bold mb-0">{{ $productId ? 'Edit Product' : 'Add New Product' }}</h4>
@@ -28,7 +31,7 @@
             <div class="bg-white rounded-3 border p-4 mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="font-poppins fw-bold mb-0">Product Images</h6>
-                    <button wire:click="addImage" type="button" class="btn btn-sm btn-outline-primary">+ Add Image</button>
+                    <button wire:click="addImage" type="button" class="btn btn-sm btn-outline-primary" :disabled="uploads > 0">+ Add Image</button>
                 </div>
 
                 @foreach($images as $idx => $img)
@@ -45,7 +48,7 @@
                             @if($idx > 0)
                                 <button wire:click="removeImage({{ $idx }})"
                                         type="button"
-                                        class="btn btn-sm btn-outline-danger">
+                                        class="btn btn-sm btn-outline-danger" :disabled="uploads > 0">
                                     Remove
                                 </button>
                             @endif
@@ -84,7 +87,7 @@
 
                 <small class="text-muted">
                     Upload JPG, PNG, WebP or GIF directly from your computer. Source files up to 20MB are accepted
-                    and large images are optimized before saving to the CapitalCart database. The first image is the primary image.
+                    (up to 16 megapixels) and optimized before saving to the CapitalCart database. GIFs are saved as still images. The first image is the primary image.
                 </small>
             </div>
 
@@ -211,7 +214,9 @@
                 </div>
             </div>
 
-            <button wire:click="save" type="button" class="btn btn-primary w-100 btn-lg">
+            @error('save') <div class="alert alert-danger" role="alert">{{ $message }}</div> @enderror
+            <div x-show="syncFailed" x-cloak class="alert alert-warning">Your image was saved, but the form could not refresh. Reload this page before making further changes.</div>
+            <button wire:click="save" type="button" class="btn btn-primary w-100 btn-lg" :disabled="uploads > 0 || syncFailed" wire:loading.attr="disabled">
                 {{ $productId ? 'Save Changes' : 'Create Product' }}
             </button>
             <a href="{{ route('admin.products.index') }}" class="btn btn-outline-secondary w-100 mt-2">Cancel</a>
@@ -301,6 +306,7 @@
                 }
 
                 input.disabled = true;
+                window.dispatchEvent(new Event('catalog-upload-start'));
 
                 const formData = new FormData();
                 formData.append('image', file);
@@ -309,6 +315,7 @@
                     formData.append('existing_image_id', existingImageId);
                 }
 
+                let imageSaved = false;
                 try {
                     const response = await fetch(uploadUrl, {
                         method: 'POST',
@@ -349,6 +356,7 @@
                         );
                     }
 
+                    imageSaved = true;
                     input.dataset.existingImageId = String(data.image_id || '');
                     input.value = '';
 
@@ -368,6 +376,7 @@
                             String(data.image_url)
                         );
                     } else {
+                        window.dispatchEvent(new Event('catalog-upload-sync-failed'));
                         console.warn(PREFIX, 'Livewire state sync skipped', {
                             component_found: Boolean(component),
                             image_id: data.image_id,
@@ -382,6 +391,7 @@
 
                     console.info(PREFIX, 'SUCCESS', data);
                 } catch (error) {
+                    if (imageSaved) window.dispatchEvent(new Event('catalog-upload-sync-failed'));
                     console.error(PREFIX, 'FAILED', {
                         name: error?.name,
                         message: error?.message,
@@ -394,6 +404,7 @@
                     }
                 } finally {
                     input.disabled = false;
+                    window.dispatchEvent(new Event('catalog-upload-finish'));
                     URL.revokeObjectURL(localPreview);
                     console.groupEnd();
                 }

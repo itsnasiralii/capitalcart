@@ -4,6 +4,9 @@ namespace App\Livewire\Admin\Categories;
 
 use App\Helpers\PhoneHelper;
 use App\Models\Category;
+use App\Services\ImageStorage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
@@ -99,40 +102,40 @@ class CategoryManager extends Component
             ],
             'sort_order'  => 'required|integer|min:0|max:9999',
             'is_active'   => 'boolean',
-            'image'       => 'nullable|mimes:jpeg,jpg,png,webp,avif,gif|max:5120',
+            'image'       => array_merge(['nullable'], array_slice(ImageStorage::rules(), 1)),
         ]);
 
-        $imageUrl = $this->existingImageUrl;
+        try {
+            DB::transaction(function () {
+                $category = $this->editingCategoryId ? Category::findOrFail($this->editingCategoryId) : new Category;
+                $imageUrl = $this->image
+                    ? app(ImageStorage::class)->store($this->image)
+                    : $category->image_url;
 
-        if ($this->image) {
-            // Delete old stored image if it was local
-            if ($this->existingImageUrl && str_starts_with($this->existingImageUrl, '/storage/')) {
-                $oldPath = str_replace('/storage/', '', $this->existingImageUrl);
-                Storage::disk('public')->delete($oldPath);
-            }
-
-            $path = $this->image->store('categories', 'public');
-            $imageUrl = '/storage/' . $path;
+                $category->fill([
+                    'name'        => $this->name,
+                    'slug'        => Str::slug($this->slug),
+                    'description' => $this->description ?: null,
+                    'whatsapp_number' => $this->whatsapp_number !== ''
+                        ? PhoneHelper::toLocal($this->whatsapp_number)
+                        : null,
+                    'sort_order'  => $this->sort_order,
+                    'is_active'   => $this->is_active,
+                    'image_url'   => $imageUrl,
+                ])->save();
+            });
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            report($exception);
+            $this->addError('image', 'The category could not be saved. Your previous image is unchanged. Please try again.');
+            return;
         }
 
-        Category::updateOrCreate(
-            ['id' => $this->editingCategoryId],
-            [
-                'name'        => $this->name,
-                'slug'        => Str::slug($this->slug),
-                'description' => $this->description ?: null,
-                'whatsapp_number' => $this->whatsapp_number !== ''
-                    ? PhoneHelper::toLocal($this->whatsapp_number)
-                    : null,
-                'sort_order'  => $this->sort_order,
-                'is_active'   => $this->is_active,
-                'image_url'   => $imageUrl,
-            ]
-        );
-
+        $message = $this->isEditing ? 'Category updated successfully!' : 'Category created successfully!';
         $this->dispatch('close-category-modal');
         $this->resetForm();
-        $this->dispatch('show-toast', message: $this->isEditing ? 'Category updated successfully!' : 'Category created successfully!', type: 'success');
+        $this->dispatch('show-toast', message: $message, type: 'success');
     }
 
     public function toggleStatus(int $id): void
