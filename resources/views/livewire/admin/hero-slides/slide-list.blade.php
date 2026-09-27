@@ -86,7 +86,14 @@
     <div class="modal fade" id="slideModal" tabindex="-1" aria-hidden="true" wire:ignore.self>
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
-                <form wire:submit.prevent="saveSlide">
+                <form wire:submit.prevent="saveSlide"
+                      x-data="{ uploading: false, progress: 0, uploadError: '' }"
+                      x-on:open-slide-modal.window="uploading = false; uploadError = ''"
+                      x-on:livewire-upload-start="uploading = true; progress = 0; uploadError = ''"
+                      x-on:livewire-upload-finish="uploading = false"
+                      x-on:livewire-upload-cancel="uploading = false"
+                      x-on:livewire-upload-error="uploading = false; uploadError = 'Upload failed. Choose a JPG, PNG, WebP or GIF up to 5 MB and retry.'"
+                      x-on:livewire-upload-progress="progress = $event.detail.progress">
                     <div class="modal-header">
                         <h5 class="modal-title font-poppins fw-bold">{{ $isEditing ? 'Edit Hero Slide' : 'Add Hero Slide' }}</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" wire:click="resetForm"></button>
@@ -133,13 +140,14 @@
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Slide Image (Square recommended) <span class="text-danger">*</span></label>
-                            <input type="file" wire:model="image" class="form-control @error('image') is-invalid @enderror" accept="image/*">
-                            <small class="text-muted">High-res JPG/PNG/WebP. It will be cropped circularly.</small>
+                            <input type="file" wire:model="image" class="form-control @error('image') is-invalid @enderror" accept="image/jpeg,image/png,image/webp,image/gif">
+                            <small class="text-muted">JPG/PNG/WebP/GIF (still image), up to 5 MB / 16 megapixels. Cropped circularly on the home page.</small>
                             @error('image') <div class="invalid-feedback">{{ $message }}</div> @enderror
 
-                            <div wire:loading wire:target="image" class="text-primary small mt-1">
-                                <span class="spinner-border spinner-border-sm me-1"></span> Processing image...
+                            <div x-show="uploading" x-cloak class="text-primary small mt-1" role="status">
+                                Uploading: <span x-text="progress"></span>%
                             </div>
+                            <div x-show="uploadError" x-cloak x-text="uploadError" class="text-danger small mt-2" role="alert"></div>
 
                             @php
                                 $tempUrl = null;
@@ -175,7 +183,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" wire:click="resetForm">Cancel</button>
-                        <button type="submit" class="btn btn-primary" wire:loading.attr="disabled">
+                        <button type="submit" class="btn btn-primary" wire:loading.attr="disabled" :disabled="uploading || uploadError !== ''">
                             <span wire:loading wire:target="saveSlide" class="spinner-border spinner-border-sm me-1"></span>
                             {{ $isEditing ? 'Save Changes' : 'Add Slide' }}
                         </button>

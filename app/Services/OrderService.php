@@ -27,7 +27,7 @@ class OrderService
             $this->ensureSingleWhatsAppDestination();
         }
 
-        return DB::transaction(function () use ($billing, $shipping, $paymentMethod, $notes, $stripePaymentIntentId) {
+        $order = DB::transaction(function () use ($billing, $shipping, $paymentMethod, $notes, $stripePaymentIntentId) {
             $subtotal    = $this->cart->getSubtotal();
             $discount    = $this->cart->getDiscount();
             $shippingAmt = $this->cart->getShipping();
@@ -114,33 +114,52 @@ class OrderService
 
             return $order;
         });
+
+        // Only this browser session may open the full contact details sent to WhatsApp.
+        session()->put('whatsapp_order_access.' . $order->id, now()->addHours(24)->timestamp);
+
+        return $order;
+    }
+
+    public function canOpenWhatsApp(Order $order): bool
+    {
+        if (in_array($order->status, ['expired', 'cancelled'], true)
+            || ($order->expires_at && $order->expires_at->isPast())) {
+            return false;
+        }
+
+        $user = auth()->user();
+        if ($user && ($user->is_admin || ($order->user_id && $user->id === $order->user_id))) {
+            return true;
+        }
+
+        return (int) session('whatsapp_order_access.' . $order->id, 0) > now()->timestamp;
     }
 
     public function generateWhatsAppMessage(Order $order): string
     {
-        $msg  = "🛒 *Assalam-o-Alaikum! New Order from CapitalCart.pk*\n";
-        $msg .= "━━━━━━━━━━━━━━━━━━\n";
-        $msg .= "📦 *Order ID:* " . $order->order_number . "\n";
-        $msg .= "👤 *Customer Name:* " . $order->billing_name . "\n";
-        $msg .= "📞 *Contact:* " . $order->billing_phone . "\n";
+        // Unicode escapes keep emoji bytes intact even when a source editor uses a legacy encoding.
+        $msg  = "\u{1F6D2} *Assalam-o-Alaikum! New Order from CapitalCart.pk*\n\n";
+        $msg .= "\u{1F4E6} *Order ID:* " . $order->order_number . "\n";
+        $msg .= "\u{1F464} *Customer Name:* " . $order->billing_name . "\n";
+        $msg .= "\u{1F4DE} *Contact:* " . $order->billing_phone . "\n";
         if ($order->shipping_city && $order->shipping_city !== 'Islamabad') {
-            $msg .= "📍 *City:* " . $order->shipping_city . "\n";
+            $msg .= "\u{1F4CD} *City:* " . $order->shipping_city . "\n";
         }
-        $msg .= "━━━━━━━━━━━━━━━━━━\n";
-        $msg .= "📋 *Ordered Items:*\n";
+        $msg .= "\n\u{1F4CB} *Ordered Items:*\n";
         foreach ($order->items as $idx => $item) {
             $variant = $item->variant_label ? " (" . $item->variant_label . ")" : "";
-            $msg .= ($idx + 1) . ". " . $item->product_name . $variant . " x" . $item->quantity . " = Rs. " . number_format($item->line_total, 0) . "\n";
+            $msg .= ($idx + 1) . ". " . $item->product_name . $variant . "\n";
+            $msg .= "   " . $item->quantity . " x Rs. " . number_format($item->unit_price, 2)
+                . " = Rs. " . number_format($item->line_total, 2) . "\n";
         }
-        $msg .= "━━━━━━━━━━━━━━━━━━\n";
-        $msg .= "💵 *Subtotal:* Rs. " . number_format($order->subtotal, 0) . "\n";
+        $msg .= "\n\u{1F4B5} *Subtotal:* Rs. " . number_format($order->subtotal, 2) . "\n";
         if ($order->discount_amount > 0) {
-            $msg .= "🏷️ *Discount:* -Rs. " . number_format($order->discount_amount, 0) . "\n";
+            $msg .= "\u{1F3F7}\u{FE0F} *Discount:* -Rs. " . number_format($order->discount_amount, 2) . "\n";
         }
-        $msg .= "🚚 *Delivery Charges:* Rs. " . number_format($order->shipping_amount, 0) . "\n";
-        $msg .= "💰 *Final Total Payable:* Rs. " . number_format($order->total, 0) . "\n";
-        $msg .= "━━━━━━━━━━━━━━━━━━\n";
-        $msg .= "Please confirm my order!";
+        $msg .= "\u{1F69A} *Delivery Charges:* Rs. " . number_format($order->shipping_amount, 2) . "\n";
+        $msg .= "\u{1F4B0} *Final Total Payable:* Rs. " . number_format($order->total, 2) . "\n\n";
+        $msg .= "\u{2705} Please confirm my order!";
 
         return $msg;
     }

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="CapitalCart">
+  <defs><radialGradient id="bg"><stop stop-color="#254564"/><stop offset="1" stop-color="#0f172a"/></radialGradient></defs>
+  <rect width="600" height="600" fill="url(#bg)"/>
+  <circle cx="300" cy="300" r="210" fill="none" stroke="#ffffff" stroke-opacity=".08" stroke-width="24"/>
+  <g fill="none" stroke="#f97316" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M170 210h42l34 142h153l34-106H222"/><circle cx="260" cy="396" r="10"/><circle cx="381" cy="396" r="10"/>
+  </g>
+</svg>

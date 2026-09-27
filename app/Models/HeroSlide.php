@@ -28,6 +28,12 @@ class HeroSlide extends Model
 
     public function getImageUrlAttribute(): string
     {
+        if (!$this->image_path) {
+            return asset('images/hero-fallback.svg');
+        }
+        if (str_starts_with($this->image_path, '/media/')) {
+            return $this->image_path;
+        }
         if (str_starts_with($this->image_path, 'http://') || str_starts_with($this->image_path, 'https://')) {
             return $this->image_path;
         }

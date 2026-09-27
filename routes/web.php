@@ -9,6 +9,9 @@ use App\Models\Order;
 use Illuminate\Support\Facades\Route;
 
 // Public
+Route::get('/media/{media}', [\App\Http\Controllers\MediaController::class, 'show'])
+    ->whereUuid('media')->name('media.show');
+
 Route::get('/product-images/{image}', function (ProductImage $image) {
     $blob = $image->blob;
     abort_unless($blob, 404);
@@ -52,6 +55,16 @@ Route::get('/order-confirmation/{orderNumber}', function (string $orderNumber) {
     $order = Order::with('items')->where('order_number', $orderNumber)->firstOrFail();
     return view('pages.order-confirmation', compact('order'));
 })->name('order.confirmation');
+
+Route::get('/order-confirmation/{orderNumber}/whatsapp', function (string $orderNumber) {
+    $order = Order::with('items')->where('order_number', $orderNumber)->firstOrFail();
+    $service = app(\App\Services\OrderService::class);
+    abort_unless($service->canOpenWhatsApp($order), 403, 'Open this order from the browser used at checkout, within 24 hours.');
+
+    return redirect()->away($service->getWhatsAppUrlForOrder($order))
+        ->header('Cache-Control', 'private, no-store')
+        ->header('Referrer-Policy', 'no-referrer');
+})->name('order.whatsapp');
 
 Route::get('/portfolio', function () {
     return view('pages.portfolio');

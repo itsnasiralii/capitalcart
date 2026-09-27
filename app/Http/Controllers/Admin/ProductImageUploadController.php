@@ -3,209 +3,80 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\MediaAsset;
 use App\Models\Product;
 use App\Models\ProductImage;
-use App\Models\ProductImageBlob;
+use App\Services\ImageStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class ProductImageUploadController extends Controller
 {
     public function store(Request $request, Product $product): JsonResponse
     {
-        try {
         $validated = $request->validate([
-            'image' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:20480'],
+            'image' => ImageStorage::rules(20480),
             'index' => ['required', 'integer', 'min:0', 'max:50'],
             'existing_image_id' => ['nullable', 'integer'],
         ]);
-
         $index = (int) $validated['index'];
-        $existingId = !empty($validated['existing_image_id'])
-            ? (int) $validated['existing_image_id']
+        $existing = !empty($validated['existing_image_id'])
+            ? $product->images()->findOrFail($validated['existing_image_id'])
             : null;
 
         try {
-            $prepared = $this->prepareImage($request->file('image'));
-
-            if (!$prepared) {
-                return response()->json([
-                    'message' => 'The selected image could not be processed.',
-                    'error_code' => 'IMAGE_PROCESSING_FAILED',
-                ], 422);
-            }
-
-            $image = null;
-
-            if ($existingId) {
-                $image = ProductImage::query()
-                    ->where('product_id', $product->id)
-                    ->find($existingId);
-            }
-
-            if (!$image) {
-                $image = ProductImage::create([
-                    'product_id' => $product->id,
-                    'image_url' => '',
+            $image = DB::transaction(function () use ($request, $product, $existing, $index) {
+                $url = app(ImageStorage::class)->store($request->file('image'), 'image', 20480);
+                $image = $existing ?? new ProductImage(['product_id' => $product->id]);
+                $image->fill([
+                    'image_url' => $url,
                     'is_primary' => $index === 0,
                     'sort_order' => $index,
-                ]);
-            }
+                ])->save();
 
-            if ($index === 0) {
-                ProductImage::query()
-                    ->where('product_id', $product->id)
-                    ->where('id', '!=', $image->id)
-                    ->update(['is_primary' => false]);
-            }
+                if ($index === 0) {
+                    $product->images()->where('id', '!=', $image->id)->update(['is_primary' => false]);
+                }
 
-            $image->update([
-                'image_url' => '/product-images/' . $image->id . '?v=' . time(),
-                'is_primary' => $index === 0,
-                'sort_order' => $index,
-            ]);
+                return $image;
+            });
 
-            // FIX: Use updateOrCreate on the Model directly, not on the HasOne relation
-            // $image->blob()->updateOrCreate() fails because HasOne->updateOrCreate()
-            // does not pass the foreign key constraint automatically in all Laravel versions.
-            ProductImageBlob::updateOrCreate(
-                ['product_image_id' => $image->id],
-                [
-                    'image_data' => $prepared['data'],
-                    'mime_type'  => $prepared['mime_type'],
-                    'file_size'  => $prepared['file_size'],
-                ]
-            );
+            $asset = MediaAsset::findOrFail(basename($image->image_url));
 
             return response()->json([
                 'ok' => true,
                 'image_id' => $image->id,
                 'image_url' => $image->image_url,
-                'mime_type' => $prepared['mime_type'],
-                'file_size' => $prepared['file_size'],
+                'mime_type' => $asset->mime_type,
+                'file_size' => $asset->byte_size,
             ]);
-        } catch (Throwable $e) {
-            report($e);
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            $requestId = (string) Str::uuid();
+            \Illuminate\Support\Facades\Log::error('Catalog image upload failed', [
+                'request_id' => $requestId,
+                'exception' => $exception,
+            ]);
 
-            $uploadedFile = $request->file('image');
-
+            // Useful in DevTools without returning SQL bindings, image bytes or credentials.
             return response()->json([
-                'message' => 'Image upload failed on the server.',
+                'message' => 'Image could not be saved. The previous photo is unchanged. Please retry.',
                 'error_code' => 'SERVER_UPLOAD_FAILED',
-                'exception_type' => get_class($e),
-                'exception_message' => $e->getMessage(),
-                'exception_file' => basename($e->getFile()),
-                'exception_line' => $e->getLine(),
+                'request_id' => $requestId,
+                'exception_type' => class_basename($exception),
                 'debug' => [
-                    'php_version' => PHP_VERSION,
                     'gd_loaded' => extension_loaded('gd'),
-                    'pdo_pgsql_loaded' => extension_loaded('pdo_pgsql'),
+                    'webp_supported' => function_exists('imagewebp'),
                     'db_driver' => config('database.default'),
-                    'file_received' => $uploadedFile ? true : false,
-                    'file_size_bytes' => $uploadedFile ? $uploadedFile->getSize() : null,
-                    'file_mime' => $uploadedFile ? $uploadedFile->getMimeType() : null,
-                    'file_error' => $uploadedFile ? $uploadedFile->getError() : null,
+                    'file_size_bytes' => $request->file('image')?->getSize(),
                     'php_upload_max_filesize' => ini_get('upload_max_filesize'),
-                    'php_memory_limit' => ini_get('memory_limit'),
-                    'tmp_writable' => is_writable(sys_get_temp_dir()),
                 ],
             ], 500);
         }
-    }
-
-    private function prepareImage($upload): ?array
-    {
-        $path = $upload->getRealPath();
-        $mime = $upload->getMimeType() ?: 'application/octet-stream';
-        $binary = @file_get_contents($path);
-
-        if ($binary === false) {
-            return null;
-        }
-
-        // Skip GD optimization for small images or GIFs
-        if (strlen($binary) <= 3 * 1024 * 1024 || $mime === 'image/gif') {
-            return [
-                'data' => $binary,
-                'mime_type' => $mime,
-                'file_size' => strlen($binary),
-            ];
-        }
-
-        // FIX: Check if GD is available before using it
-        if (!function_exists('imagecreatefromstring')) {
-            return [
-                'data' => $binary,
-                'mime_type' => $mime,
-                'file_size' => strlen($binary),
-            ];
-        }
-
-        $source = @imagecreatefromstring($binary);
-
-        if (!$source) {
-            return [
-                'data' => $binary,
-                'mime_type' => $mime,
-                'file_size' => strlen($binary),
-            ];
-        }
-
-        $width = imagesx($source);
-        $height = imagesy($source);
-        $maxDimension = 1800;
-        $scale = min(1, $maxDimension / max($width, $height));
-        $newWidth = max(1, (int) round($width * $scale));
-        $newHeight = max(1, (int) round($height * $scale));
-
-        $canvas = imagecreatetruecolor($newWidth, $newHeight);
-
-        if (in_array($mime, ['image/png', 'image/webp'], true)) {
-            imagealphablending($canvas, false);
-            imagesavealpha($canvas, true);
-            $transparent = imagecolorallocatealpha($canvas, 0, 0, 0, 127);
-            imagefilledrectangle($canvas, 0, 0, $newWidth, $newHeight, $transparent);
-        }
-
-        imagecopyresampled(
-            $canvas,
-            $source,
-            0, 0, 0, 0,
-            $newWidth, $newHeight,
-            $width, $height
-        );
-
-        ob_start();
-
-        $written = match ($mime) {
-            'image/jpeg' => imagejpeg($canvas, null, 82),
-            'image/png'  => imagepng($canvas, null, 7),
-            'image/webp' => function_exists('imagewebp') ? imagewebp($canvas, null, 82) : false,
-            default      => false,
-        };
-
-        $optimized = ob_get_clean();
-
-        imagedestroy($canvas);
-        imagedestroy($source);
-
-        if (!$written || !$optimized) {
-            return [
-                'data' => $binary,
-                'mime_type' => $mime,
-                'file_size' => strlen($binary),
-            ];
-        }
-
-        if (strlen($optimized) >= strlen($binary) && $scale === 1.0) {
-            $optimized = $binary;
-        }
-
-        return [
-            'data' => $optimized,
-            'mime_type' => $mime,
-            'file_size' => strlen($optimized),
-        ];
     }
 }

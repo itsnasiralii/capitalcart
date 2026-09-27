@@ -30,11 +30,6 @@
                     <div class="text-center mt-3">
                         <small class="text-muted">Don't have an account? <a href="{{ route('register') }}" class="text-primary fw-500">Register</a></small>
                     </div>
-                    <hr class="my-3">
-                    <div class="text-center">
-                        <small class="text-muted d-block mb-1">Admin demo credentials:</small>
-                        <small class="text-muted">nasirali@capitalcart.pk / nasirali123</small>
-                    </div>
                 </div>
             </div>
         </div>

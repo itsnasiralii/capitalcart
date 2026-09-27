@@ -11,7 +11,7 @@ class HeroSlider extends Component
     public function render()
     {
         $slides = HeroSlide::active()->get();
-        $autoplayDuration = (int) Setting::get('slider_autoplay_duration', 5);
+        $autoplayDuration = max(4, min(6, (int) Setting::get('slider_autoplay_duration', 5)));
 
         return view('livewire.hero-slider', [
             'slides'           => $slides,

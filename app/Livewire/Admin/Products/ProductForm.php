@@ -5,9 +5,11 @@ namespace App\Livewire\Admin\Products;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\AttributeType;
-use App\Models\Attribute;
 use App\Models\ProductImage;
-use App\Models\ProductVariant;
+use App\Services\ImageStorage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\Attributes\Computed;
@@ -17,6 +19,7 @@ class ProductForm extends Component
 {
     use WithFileUploads;
 
+    #[Locked]
     public ?int $productId = null;
 
     // Basic Info
@@ -71,6 +74,8 @@ class ProductForm extends Component
             }
 
             $this->variants = $product->allVariants->map(fn($v) => [
+                'id'             => $v->id,
+                'is_active'      => $v->is_active,
                 'sku'            => $v->sku ?? '',
                 'price_modifier' => (string) $v->price_modifier,
                 'stock_quantity' => $v->stock_quantity,
@@ -155,7 +160,7 @@ class ProductForm extends Component
         }
 
         $this->images[$index]['id'] = $image->id;
-        $this->images[$index]['url'] = $imageUrl;
+        $this->images[$index]['url'] = $image->image_url;
         $this->images[$index]['is_primary'] = $index === 0;
     }
 
@@ -178,208 +183,84 @@ class ProductForm extends Component
     public function save(): void
     {
         $this->validate([
-            'name'           => 'required|string|max:255',
-            'category_id'    => 'required|exists:categories,id',
-            'base_price'     => 'required|numeric|min:0',
-            'sale_price'     => 'nullable|numeric|min:0',
-            'imageUploads.*' => 'nullable|image|max:20480',
+            'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'base_price' => 'required|numeric|min:0',
+            'sale_price' => 'nullable|numeric|min:0',
+            'stock_quantity' => 'required|integer|min:0',
+            'images' => 'array|max:51',
+            'imageUploads.*' => array_merge(['nullable'], array_slice(ImageStorage::rules(20480), 1)),
+            'variants.*.stock_quantity' => 'required|integer|min:0',
+            'variants.*.price_modifier' => 'required|numeric',
+            'variants.*.attribute_ids.*' => 'integer|exists:attributes,id',
         ]);
 
-        $data = [
-            'category_id'       => $this->category_id,
-            'name'              => $this->name,
-            'short_description' => $this->short_description ?: null,
-            'description'       => $this->description ?: null,
-            'base_price'        => $this->base_price,
-            'sale_price'        => $this->sale_price ?: null,
-            'cost_price'        => $this->cost_price ?: null,
-            'sku'               => $this->sku ?: null,
-            'stock_quantity'    => $this->is_variable
-                ? collect($this->variants)->sum('stock_quantity')
-                : $this->stock_quantity,
-            'is_featured'       => $this->is_featured,
-            'is_active'         => $this->is_active,
-            'is_variable'       => $this->is_variable,
-        ];
+        try {
+            DB::transaction(function () {
+                $product = $this->productId ? Product::findOrFail($this->productId) : new Product;
+                $product->fill([
+                    'category_id' => $this->category_id,
+                    'name' => $this->name,
+                    'short_description' => $this->short_description ?: null,
+                    'description' => $this->description ?: null,
+                    'base_price' => $this->base_price,
+                    'sale_price' => $this->sale_price ?: null,
+                    'cost_price' => $this->cost_price ?: null,
+                    'sku' => $this->sku ?: null,
+                    'stock_quantity' => $this->is_variable ? collect($this->variants)->sum('stock_quantity') : $this->stock_quantity,
+                    'is_featured' => $this->is_featured,
+                    'is_active' => $this->is_active,
+                    'is_variable' => $this->is_variable,
+                ])->save();
 
-        if ($this->productId) {
-            $product = Product::findOrFail($this->productId);
-            $product->update($data);
-        } else {
-            $product = Product::create($data);
-        }
-
-        // Sync images. New/replacement images are stored directly in the database.
-        $keptImageIds = [];
-
-        foreach ($this->images as $idx => $imgMeta) {
-            $upload = $this->imageUploads[$idx] ?? null;
-            $imageId = !empty($imgMeta['id']) ? (int) $imgMeta['id'] : null;
-
-            $image = $imageId
-                ? ProductImage::where('product_id', $product->id)->find($imageId)
-                : null;
-
-            if ($upload) {
-                $prepared = $this->prepareImageForDatabase($upload);
-
-                if (!$prepared) {
-                    $this->addError("imageUploads.$idx", 'The selected image could not be processed. Please try a JPG, PNG, WebP or GIF file.');
-                    return;
+                $keptIds = [];
+                foreach ($this->images as $index => $metadata) {
+                    $image = !empty($metadata['id'])
+                        ? $product->images()->findOrFail($metadata['id'])
+                        : null;
+                    if ($upload = ($this->imageUploads[$index] ?? null)) {
+                        $url = app(ImageStorage::class)->store($upload, "imageUploads.$index", 20480);
+                        $image ??= $product->images()->make();
+                        $image->image_url = $url;
+                    }
+                    if ($image) {
+                        $image->is_primary = count($keptIds) === 0;
+                        $image->sort_order = count($keptIds);
+                        $image->save();
+                        $keptIds[] = $image->id;
+                    }
                 }
+                $product->images()->whereNotIn('id', $keptIds)->delete();
 
-                if (!$image) {
-                    $image = ProductImage::create([
-                        'product_id' => $product->id,
-                        'image_url'  => '',
-                        'is_primary' => $idx === 0,
-                        'sort_order' => $idx,
-                    ]);
+                // Preserve the IDs referenced by existing carts, stock movements and orders.
+                if ($this->is_variable) {
+                    $variantIds = [];
+                    foreach ($this->variants as $data) {
+                        $variant = !empty($data['id'])
+                            ? $product->allVariants()->findOrFail($data['id'])
+                            : $product->allVariants()->make();
+                        $variant->fill([
+                            'sku' => $data['sku'] ?: null,
+                            'price_modifier' => $data['price_modifier'] ?? 0,
+                            'stock_quantity' => $data['stock_quantity'] ?? 0,
+                            'is_active' => $data['is_active'] ?? true,
+                        ])->save();
+                        $variant->variantAttributes()->sync($data['attribute_ids'] ?? []);
+                        $variantIds[] = $variant->id;
+                    }
+                    $product->allVariants()->whereNotIn('id', $variantIds)->delete();
                 }
-
-                $image->update([
-                    'image_url'  => '/product-images/' . $image->id . '?v=' . time(),
-                    'is_primary' => $idx === 0,
-                    'sort_order' => $idx,
-                ]);
-
-                $image->blob()->updateOrCreate([], [
-                    'image_data' => $prepared['data'],
-                    'mime_type'  => $prepared['mime_type'],
-                    'file_size'  => $prepared['file_size'],
-                ]);
-
-                $keptImageIds[] = $image->id;
-                continue;
-            }
-
-            // Keep an existing image if this row was not replaced.
-            if ($image) {
-                $image->update([
-                    'is_primary' => $idx === 0,
-                    'sort_order' => $idx,
-                ]);
-                $keptImageIds[] = $image->id;
-            }
-        }
-
-        if (empty($keptImageIds)) {
-            $product->images()->delete();
-        } else {
-            $product->images()->whereNotIn('id', $keptImageIds)->delete();
-        }
-
-        // Sync Variants
-        if ($this->is_variable) {
-            $product->allVariants()->delete();
-            foreach ($this->variants as $vData) {
-                $variant = ProductVariant::create([
-                    'product_id'     => $product->id,
-                    'sku'            => $vData['sku'] ?: null,
-                    'price_modifier' => $vData['price_modifier'] ?? 0,
-                    'stock_quantity' => $vData['stock_quantity'] ?? 0,
-                    'is_active'      => true,
-                ]);
-                if (!empty($vData['attribute_ids'])) {
-                    $variant->variantAttributes()->attach($vData['attribute_ids']);
-                }
-            }
+            });
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            report($exception);
+            $this->addError('save', 'The product could not be saved. Your previous data is unchanged. Please retry.');
+            return;
         }
 
         session()->flash('success', 'Product saved successfully!');
         redirect()->route('admin.products.index');
-    }
-
-    private function prepareImageForDatabase($upload): ?array
-    {
-        $path = $upload->getRealPath();
-        $mime = $upload->getMimeType() ?: 'application/octet-stream';
-        $binary = @file_get_contents($path);
-
-        if ($binary === false) {
-            return null;
-        }
-
-        // Keep small files and animated GIFs untouched.
-        if (strlen($binary) <= 3 * 1024 * 1024 || $mime === 'image/gif') {
-            return [
-                'data' => $binary,
-                'mime_type' => $mime,
-                'file_size' => strlen($binary),
-            ];
-        }
-
-        $source = @imagecreatefromstring($binary);
-
-        if (!$source) {
-            return [
-                'data' => $binary,
-                'mime_type' => $mime,
-                'file_size' => strlen($binary),
-            ];
-        }
-
-        $width = imagesx($source);
-        $height = imagesy($source);
-        $maxDimension = 1800;
-        $scale = min(1, $maxDimension / max($width, $height));
-        $newWidth = max(1, (int) round($width * $scale));
-        $newHeight = max(1, (int) round($height * $scale));
-
-        $canvas = imagecreatetruecolor($newWidth, $newHeight);
-
-        if (in_array($mime, ['image/png', 'image/webp'], true)) {
-            imagealphablending($canvas, false);
-            imagesavealpha($canvas, true);
-            $transparent = imagecolorallocatealpha($canvas, 0, 0, 0, 127);
-            imagefilledrectangle($canvas, 0, 0, $newWidth, $newHeight, $transparent);
-        }
-
-        imagecopyresampled(
-            $canvas,
-            $source,
-            0,
-            0,
-            0,
-            0,
-            $newWidth,
-            $newHeight,
-            $width,
-            $height
-        );
-
-        ob_start();
-
-        $written = match ($mime) {
-            'image/jpeg' => imagejpeg($canvas, null, 82),
-            'image/png'  => imagepng($canvas, null, 7),
-            'image/webp' => function_exists('imagewebp') ? imagewebp($canvas, null, 82) : false,
-            default      => false,
-        };
-
-        $optimized = ob_get_clean();
-
-        imagedestroy($canvas);
-        imagedestroy($source);
-
-        if (!$written || !$optimized) {
-            return [
-                'data' => $binary,
-                'mime_type' => $mime,
-                'file_size' => strlen($binary),
-            ];
-        }
-
-        // Never store a recompressed copy if it is larger than the source.
-        if (strlen($optimized) >= strlen($binary) && $scale === 1.0) {
-            $optimized = $binary;
-        }
-
-        return [
-            'data' => $optimized,
-            'mime_type' => $mime,
-            'file_size' => strlen($optimized),
-        ];
     }
 
     public function render()
