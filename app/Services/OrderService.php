@@ -23,6 +23,10 @@ class OrderService
             throw new \Exception('Some items are no longer available in the requested quantity: ' . implode(', ', $outOfStock));
         }
 
+        if ($paymentMethod === 'whatsapp') {
+            $this->ensureSingleWhatsAppDestination();
+        }
+
         return DB::transaction(function () use ($billing, $shipping, $paymentMethod, $notes, $stripePaymentIntentId) {
             $subtotal    = $this->cart->getSubtotal();
             $discount    = $this->cart->getDiscount();
@@ -118,7 +122,7 @@ class OrderService
         $msg .= "━━━━━━━━━━━━━━━━━━\n";
         $msg .= "📦 *Order ID:* " . $order->order_number . "\n";
         $msg .= "👤 *Customer Name:* " . $order->billing_name . "\n";
-        $msg .= "📞 *Contact:* " . $order->masked_phone . "\n";
+        $msg .= "📞 *Contact:* " . $order->billing_phone . "\n";
         if ($order->shipping_city && $order->shipping_city !== 'Islamabad') {
             $msg .= "📍 *City:* " . $order->shipping_city . "\n";
         }
@@ -144,7 +148,50 @@ class OrderService
     public function getWhatsAppUrlForOrder(Order $order): string
     {
         $message = $this->generateWhatsAppMessage($order);
-        return Setting::getWhatsAppUrl($message);
+        $number = $this->getOrderWhatsAppNumbers($order)->first();
+
+        if (!$number) {
+            return Setting::getWhatsAppUrl($message);
+        }
+
+        return 'https://wa.me/' . PhoneHelper::toInternational($number) . '?text=' . rawurlencode($message);
+    }
+
+    private function ensureSingleWhatsAppDestination(): void
+    {
+        $numbers = $this->getCartWhatsAppNumbers();
+
+        if ($numbers->count() > 1) {
+            throw new \Exception('Iqbal Herbal Store and CapitalCart products use different WhatsApp numbers. Please place them as separate orders.');
+        }
+    }
+
+    private function getCartWhatsAppNumbers()
+    {
+        $items = collect($this->cart->getItems());
+        $products = Product::with('category')
+            ->whereIn('id', $items->pluck('product_id')->unique())
+            ->get()
+            ->keyBy('id');
+
+        return $items->map(function ($item) use ($products) {
+            $product = $products->get($item['product_id']);
+            $number = $product?->category?->whatsapp_number ?: Setting::getWhatsAppNumber();
+
+            return PhoneHelper::toLocal($number);
+        })->filter()->unique()->values();
+    }
+
+    private function getOrderWhatsAppNumbers(Order $order)
+    {
+        return $order->items()
+            ->with('product.category')
+            ->get()
+            ->map(function (OrderItem $item) {
+                $number = $item->product?->category?->whatsapp_number ?: Setting::getWhatsAppNumber();
+
+                return PhoneHelper::toLocal($number);
+            })->filter()->unique()->values();
     }
 
     public function updateStatus(Order $order, string $status): void
