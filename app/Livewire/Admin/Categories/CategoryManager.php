@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Categories;
 
+use App\Helpers\PhoneHelper;
 use App\Models\Category;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -22,6 +23,7 @@ class CategoryManager extends Component
     public string $name = '';
     public string $slug = '';
     public string $description = '';
+    public string $whatsapp_number = '';
     public int $sort_order = 0;
     public bool $is_active = true;
     public $image = null;
@@ -67,6 +69,7 @@ class CategoryManager extends Component
         $this->name = $category->name;
         $this->slug = $category->slug;
         $this->description = $category->description ?? '';
+        $this->whatsapp_number = $category->whatsapp_number ?? '';
         $this->sort_order = $category->sort_order ?? 0;
         $this->is_active = (bool) $category->is_active;
         $this->existingImageUrl = $category->image_url;
@@ -85,6 +88,15 @@ class CategoryManager extends Component
             'name'        => 'required|string|max:100',
             'slug'        => $slugRule,
             'description' => 'nullable|string|max:1000',
+            'whatsapp_number' => [
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) {
+                    if ($value !== '' && !PhoneHelper::isValidPakistaniNumber($value)) {
+                        $fail('Enter a valid Pakistani mobile number, for example 03009362584.');
+                    }
+                },
+            ],
             'sort_order'  => 'required|integer|min:0|max:9999',
             'is_active'   => 'boolean',
             'image'       => 'nullable|mimes:jpeg,jpg,png,webp,avif,gif|max:5120',
@@ -109,6 +121,9 @@ class CategoryManager extends Component
                 'name'        => $this->name,
                 'slug'        => Str::slug($this->slug),
                 'description' => $this->description ?: null,
+                'whatsapp_number' => $this->whatsapp_number !== ''
+                    ? PhoneHelper::toLocal($this->whatsapp_number)
+                    : null,
                 'sort_order'  => $this->sort_order,
                 'is_active'   => $this->is_active,
                 'image_url'   => $imageUrl,
@@ -186,6 +201,7 @@ class CategoryManager extends Component
             'name',
             'slug',
             'description',
+            'whatsapp_number',
             'sort_order',
             'is_active',
             'image',

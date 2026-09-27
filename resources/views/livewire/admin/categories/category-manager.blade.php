@@ -39,6 +39,7 @@
                         <th>Name</th>
                         <th>Slug</th>
                         <th>Products</th>
+                        <th>WhatsApp</th>
                         <th>Order</th>
                         <th>Status</th>
                         <th class="text-end pe-3">Actions</th>
@@ -71,6 +72,13 @@
                             </span>
                         </td>
                         <td>
+                            @if($category->whatsapp_number)
+                                <span class="badge bg-success-subtle text-success px-2 py-1">{{ $category->whatsapp_number }}</span>
+                            @else
+                                <span class="text-muted small">Store default</span>
+                            @endif
+                        </td>
+                        <td>
                             <span class="badge bg-secondary-subtle text-secondary px-2 py-1">#{{ $category->sort_order }}</span>
                         </td>
                         <td>
@@ -95,7 +103,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
+                        <td colspan="8" class="text-center py-5 text-muted">
                             <div class="fs-1 mb-2">📁</div>
                             No categories found matching your filter.
                         </td>
@@ -138,6 +146,13 @@
                             <label class="form-label fw-semibold">Description (Optional)</label>
                             <textarea wire:model="description" class="form-control @error('description') is-invalid @enderror" rows="2" placeholder="Short summary of this category..."></textarea>
                             @error('description') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Category WhatsApp Number (Optional)</label>
+                            <input type="text" wire:model="whatsapp_number" class="form-control @error('whatsapp_number') is-invalid @enderror" placeholder="e.g. 03009362584">
+                            <small class="text-muted">Orders for this category will use this number. Leave blank to use the main CapitalCart number.</small>
+                            @error('whatsapp_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="row g-3 mb-3">
