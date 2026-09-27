@@ -138,7 +138,7 @@ class ProductForm extends Component
             'category_id'    => 'required|exists:categories,id',
             'base_price'     => 'required|numeric|min:0',
             'sale_price'     => 'nullable|numeric|min:0',
-            'imageUploads.*' => 'nullable|image|max:5120',
+            'imageUploads.*' => 'nullable|image|max:20480',
         ]);
 
         $data = [
@@ -177,10 +177,10 @@ class ProductForm extends Component
                 : null;
 
             if ($upload) {
-                $binary = file_get_contents($upload->getRealPath());
+                $prepared = $this->prepareImageForDatabase($upload);
 
-                if ($binary === false) {
-                    $this->addError("imageUploads.$idx", 'The selected image could not be read. Please try again.');
+                if (!$prepared) {
+                    $this->addError("imageUploads.$idx", 'The selected image could not be processed. Please try a JPG, PNG, WebP or GIF file.');
                     return;
                 }
 
@@ -194,15 +194,15 @@ class ProductForm extends Component
                 }
 
                 $image->update([
-                    'image_url'  => '/product-images/' . $image->id,
+                    'image_url'  => '/product-images/' . $image->id . '?v=' . time(),
                     'is_primary' => $idx === 0,
                     'sort_order' => $idx,
                 ]);
 
                 $image->blob()->updateOrCreate([], [
-                    'image_data' => $binary,
-                    'mime_type'  => $upload->getMimeType() ?: 'application/octet-stream',
-                    'file_size'  => $upload->getSize(),
+                    'image_data' => $prepared['data'],
+                    'mime_type'  => $prepared['mime_type'],
+                    'file_size'  => $prepared['file_size'],
                 ]);
 
                 $keptImageIds[] = $image->id;
@@ -244,6 +244,98 @@ class ProductForm extends Component
 
         session()->flash('success', 'Product saved successfully!');
         redirect()->route('admin.products.index');
+    }
+
+    private function prepareImageForDatabase($upload): ?array
+    {
+        $path = $upload->getRealPath();
+        $mime = $upload->getMimeType() ?: 'application/octet-stream';
+        $binary = @file_get_contents($path);
+
+        if ($binary === false) {
+            return null;
+        }
+
+        // Keep small files and animated GIFs untouched.
+        if (strlen($binary) <= 3 * 1024 * 1024 || $mime === 'image/gif') {
+            return [
+                'data' => $binary,
+                'mime_type' => $mime,
+                'file_size' => strlen($binary),
+            ];
+        }
+
+        $source = @imagecreatefromstring($binary);
+
+        if (!$source) {
+            return [
+                'data' => $binary,
+                'mime_type' => $mime,
+                'file_size' => strlen($binary),
+            ];
+        }
+
+        $width = imagesx($source);
+        $height = imagesy($source);
+        $maxDimension = 1800;
+        $scale = min(1, $maxDimension / max($width, $height));
+        $newWidth = max(1, (int) round($width * $scale));
+        $newHeight = max(1, (int) round($height * $scale));
+
+        $canvas = imagecreatetruecolor($newWidth, $newHeight);
+
+        if (in_array($mime, ['image/png', 'image/webp'], true)) {
+            imagealphablending($canvas, false);
+            imagesavealpha($canvas, true);
+            $transparent = imagecolorallocatealpha($canvas, 0, 0, 0, 127);
+            imagefilledrectangle($canvas, 0, 0, $newWidth, $newHeight, $transparent);
+        }
+
+        imagecopyresampled(
+            $canvas,
+            $source,
+            0,
+            0,
+            0,
+            0,
+            $newWidth,
+            $newHeight,
+            $width,
+            $height
+        );
+
+        ob_start();
+
+        $written = match ($mime) {
+            'image/jpeg' => imagejpeg($canvas, null, 82),
+            'image/png'  => imagepng($canvas, null, 7),
+            'image/webp' => function_exists('imagewebp') ? imagewebp($canvas, null, 82) : false,
+            default      => false,
+        };
+
+        $optimized = ob_get_clean();
+
+        imagedestroy($canvas);
+        imagedestroy($source);
+
+        if (!$written || !$optimized) {
+            return [
+                'data' => $binary,
+                'mime_type' => $mime,
+                'file_size' => strlen($binary),
+            ];
+        }
+
+        // Never store a recompressed copy if it is larger than the source.
+        if (strlen($optimized) >= strlen($binary) && $scale === 1.0) {
+            $optimized = $binary;
+        }
+
+        return [
+            'data' => $optimized,
+            'mime_type' => $mime,
+            'file_size' => strlen($optimized),
+        ];
     }
 
     public function render()

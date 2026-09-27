@@ -130,7 +130,7 @@ return [
 
     'temporary_file_upload' => [
         'disk' => env('LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK', 'local'),
-        'rules' => ['required', 'file', 'max:6144'],
+        'rules' => ['required', 'file', 'max:20480'],
         'directory' => 'livewire-tmp',
         'middleware' => null,                                 // Example: 'throttle:5,1'            | Default: 'throttle:60,1'
         'preview_mimes' => [                                  // Supported file types for temporary pre-signed file URLs...
@@ -275,7 +275,7 @@ return [
     */
 
     'payload' => [
-        'max_size' => 10 * 1024 * 1024, // 10MB - supports product image uploads
+        'max_size' => 32 * 1024 * 1024, // 32MB - supports larger temporary image uploads
         'max_nesting_depth' => 10,   // Maximum depth of dot-notation property paths
         'max_calls' => 50,           // Maximum method calls per request
         'max_components' => 20,      // Maximum components per batch request

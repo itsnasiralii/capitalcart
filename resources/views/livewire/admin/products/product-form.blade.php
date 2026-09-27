@@ -100,8 +100,8 @@
                 @endforeach
 
                 <small class="text-muted">
-                    Upload JPG, PNG, WebP or GIF directly from your computer. Maximum size: 5MB per image.
-                    Images are saved in the CapitalCart database. The first image is the primary image.
+                    Upload JPG, PNG, WebP or GIF directly from your computer. Source files up to 20MB are accepted
+                    and large images are optimized before saving to the CapitalCart database. The first image is the primary image.
                 </small>
             </div>
 
