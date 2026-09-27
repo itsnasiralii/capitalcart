@@ -9,10 +9,13 @@ use App\Models\Attribute;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\Attributes\Computed;
 
 class ProductForm extends Component
 {
+    use WithFileUploads;
+
     public ?int $productId = null;
 
     // Basic Info
@@ -31,6 +34,7 @@ class ProductForm extends Component
 
     // Images
     public array $images = [['url' => '', 'is_primary' => true]];
+    public array $imageUploads = [];
 
     // Variants
     public array $variants = [];
@@ -93,6 +97,20 @@ class ProductForm extends Component
     {
         unset($this->images[$index]);
         $this->images = array_values($this->images);
+
+        // Keep pending uploads aligned with their image rows.
+        $reindexedUploads = [];
+        foreach ($this->imageUploads as $uploadIndex => $upload) {
+            $uploadIndex = (int) $uploadIndex;
+
+            if ($uploadIndex === $index) {
+                continue;
+            }
+
+            $newIndex = $uploadIndex > $index ? $uploadIndex - 1 : $uploadIndex;
+            $reindexedUploads[$newIndex] = $upload;
+        }
+        $this->imageUploads = $reindexedUploads;
     }
 
     public function addVariant(): void
@@ -114,10 +132,11 @@ class ProductForm extends Component
     public function save(): void
     {
         $this->validate([
-            'name'       => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'base_price' => 'required|numeric|min:0',
-            'sale_price' => 'nullable|numeric|min:0',
+            'name'           => 'required|string|max:255',
+            'category_id'    => 'required|exists:categories,id',
+            'base_price'     => 'required|numeric|min:0',
+            'sale_price'     => 'nullable|numeric|min:0',
+            'imageUploads.*' => 'nullable|image|max:5120',
         ]);
 
         $data = [
@@ -142,6 +161,16 @@ class ProductForm extends Component
             $product->update($data);
         } else {
             $product = Product::create($data);
+        }
+
+        // Store any images selected from the admin's computer first.
+        foreach ($this->imageUploads as $idx => $upload) {
+            if (!$upload) {
+                continue;
+            }
+
+            $path = $upload->store('products', 'public');
+            $this->images[(int) $idx]['url'] = '/storage/' . $path;
         }
 
         // Sync Images
