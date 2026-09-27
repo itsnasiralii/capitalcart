@@ -14,6 +14,7 @@ class ProductImageUploadController extends Controller
 {
     public function store(Request $request, Product $product): JsonResponse
     {
+        try {
         $validated = $request->validate([
             'image' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:20480'],
             'index' => ['required', 'integer', 'min:0', 'max:50'],
@@ -87,6 +88,8 @@ class ProductImageUploadController extends Controller
         } catch (Throwable $e) {
             report($e);
 
+            $uploadedFile = $request->file('image');
+
             return response()->json([
                 'message' => 'Image upload failed on the server.',
                 'error_code' => 'SERVER_UPLOAD_FAILED',
@@ -94,6 +97,19 @@ class ProductImageUploadController extends Controller
                 'exception_message' => $e->getMessage(),
                 'exception_file' => basename($e->getFile()),
                 'exception_line' => $e->getLine(),
+                'debug' => [
+                    'php_version' => PHP_VERSION,
+                    'gd_loaded' => extension_loaded('gd'),
+                    'pdo_pgsql_loaded' => extension_loaded('pdo_pgsql'),
+                    'db_driver' => config('database.default'),
+                    'file_received' => $uploadedFile ? true : false,
+                    'file_size_bytes' => $uploadedFile ? $uploadedFile->getSize() : null,
+                    'file_mime' => $uploadedFile ? $uploadedFile->getMimeType() : null,
+                    'file_error' => $uploadedFile ? $uploadedFile->getError() : null,
+                    'php_upload_max_filesize' => ini_get('upload_max_filesize'),
+                    'php_memory_limit' => ini_get('memory_limit'),
+                    'tmp_writable' => is_writable(sys_get_temp_dir()),
+                ],
             ], 500);
         }
     }
