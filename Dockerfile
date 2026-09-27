@@ -48,7 +48,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         pcntl
 
 # Allow large source images; the application optimizes them before database storage.
-RUN printf "upload_max_filesize=25M\npost_max_size=30M\nmemory_limit=256M\nmax_execution_time=300\n" \
+RUN printf "upload_max_filesize=25M\npost_max_size=30M\nmemory_limit=256M\nmax_execution_time=300\nlog_errors=On\nerror_log=/proc/self/fd/2\n" \
     > /usr/local/etc/php/conf.d/uploads.ini
 
 # Install Composer
