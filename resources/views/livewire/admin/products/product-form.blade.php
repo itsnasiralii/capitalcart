@@ -234,4 +234,252 @@
             <a href="{{ route('admin.products.index') }}" class="btn btn-outline-secondary w-100 mt-2">Cancel</a>
         </div>
     </div>
+
+    <script>
+        (() => {
+            if (window.__capitalCartUploadConsoleDebug) return;
+            window.__capitalCartUploadConsoleDebug = true;
+
+            const PREFIX = '[CapitalCart Upload Debug]';
+
+            const cleanUrl = (value) => {
+                try {
+                    const url = new URL(value, window.location.origin);
+                    return url.origin + url.pathname;
+                } catch (e) {
+                    return String(value || '').split('?')[0];
+                }
+            };
+
+            const isLivewireRequest = (value) => {
+                const url = cleanUrl(value);
+                return url.includes('/livewire');
+            };
+
+            console.info(PREFIX, 'Browser upload diagnostics ENABLED', {
+                page: window.location.href,
+                time: new Date().toISOString()
+            });
+
+            // Show the exact file selected in DevTools Console.
+            document.addEventListener('change', (event) => {
+                const input = event.target;
+
+                if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+
+                const model = input.getAttribute('wire:model') || '';
+                if (!model.startsWith('imageUploads.')) return;
+
+                const files = Array.from(input.files || []).map((file) => ({
+                    name: file.name,
+                    size_bytes: file.size,
+                    size_mb: Number((file.size / 1024 / 1024).toFixed(2)),
+                    mime: file.type || '(browser did not report MIME)',
+                    last_modified: new Date(file.lastModified).toISOString()
+                }));
+
+                console.group(PREFIX + ' FILE SELECTED');
+                console.info('wire:model:', model);
+                console.table(files);
+                console.info('input validity:', {
+                    valid: input.validity.valid,
+                    validationMessage: input.validationMessage
+                });
+                console.groupEnd();
+            }, true);
+
+            // Livewire emits these browser events directly on file inputs.
+            [
+                'livewire-upload-start',
+                'livewire-upload-progress',
+                'livewire-upload-finish',
+                'livewire-upload-error',
+                'livewire-upload-cancel'
+            ].forEach((eventName) => {
+                document.addEventListener(eventName, (event) => {
+                    const payload = {
+                        event: eventName,
+                        detail: event.detail || {},
+                        model: event.target?.getAttribute?.('wire:model') || null,
+                        time: new Date().toISOString()
+                    };
+
+                    if (eventName === 'livewire-upload-error') {
+                        console.error(PREFIX, 'LIVEWIRE UPLOAD ERROR', payload);
+                    } else if (eventName === 'livewire-upload-cancel') {
+                        console.warn(PREFIX, 'LIVEWIRE UPLOAD CANCELLED', payload);
+                    } else {
+                        console.info(PREFIX, eventName, payload);
+                    }
+                }, true);
+            });
+
+            // Capture Livewire XHR requests, if the current Livewire build uses XHR.
+            const XHR = window.XMLHttpRequest;
+            if (XHR && !XHR.prototype.__capitalCartUploadPatched) {
+                const nativeOpen = XHR.prototype.open;
+                const nativeSend = XHR.prototype.send;
+
+                XHR.prototype.open = function(method, url, ...rest) {
+                    this.__ccMethod = method;
+                    this.__ccUrl = url;
+                    return nativeOpen.call(this, method, url, ...rest);
+                };
+
+                XHR.prototype.send = function(body) {
+                    if (isLivewireRequest(this.__ccUrl)) {
+                        const requestInfo = {
+                            transport: 'XHR',
+                            method: this.__ccMethod,
+                            url: cleanUrl(this.__ccUrl),
+                            body_type: body?.constructor?.name || typeof body,
+                            time: new Date().toISOString()
+                        };
+
+                        console.info(PREFIX, 'REQUEST START', requestInfo);
+
+                        this.addEventListener('loadend', () => {
+                            const result = {
+                                ...requestInfo,
+                                status: this.status,
+                                status_text: this.statusText,
+                                response_url: cleanUrl(this.responseURL || this.__ccUrl)
+                            };
+
+                            if (this.status >= 400 || this.status === 0) {
+                                let preview = '';
+                                try {
+                                    preview = typeof this.responseText === 'string'
+                                        ? this.responseText.slice(0, 4000)
+                                        : '[responseText unavailable]';
+                                } catch (e) {
+                                    preview = '[responseText blocked: ' + e.message + ']';
+                                }
+
+                                console.error(PREFIX, 'REQUEST FAILED', result);
+                                console.error(PREFIX, 'SERVER RESPONSE PREVIEW:', preview);
+                            } else {
+                                console.info(PREFIX, 'REQUEST OK', result);
+                            }
+                        });
+
+                        this.addEventListener('error', (event) => {
+                            console.error(PREFIX, 'XHR NETWORK ERROR', {
+                                ...requestInfo,
+                                status: this.status,
+                                event
+                            });
+                        });
+
+                        this.addEventListener('timeout', () => {
+                            console.error(PREFIX, 'XHR TIMEOUT', requestInfo);
+                        });
+
+                        this.addEventListener('abort', () => {
+                            console.warn(PREFIX, 'XHR ABORTED', requestInfo);
+                        });
+                    }
+
+                    return nativeSend.call(this, body);
+                };
+
+                XHR.prototype.__capitalCartUploadPatched = true;
+            }
+
+            // Capture Livewire fetch requests (used by newer Livewire versions).
+            if (window.fetch && !window.fetch.__capitalCartUploadPatched) {
+                const nativeFetch = window.fetch.bind(window);
+
+                const debugFetch = async (...args) => {
+                    const input = args[0];
+                    const options = args[1] || {};
+                    const rawUrl = typeof input === 'string' ? input : input?.url;
+                    const method = options.method || input?.method || 'GET';
+
+                    if (!isLivewireRequest(rawUrl)) {
+                        return nativeFetch(...args);
+                    }
+
+                    const requestInfo = {
+                        transport: 'fetch',
+                        method,
+                        url: cleanUrl(rawUrl),
+                        body_type: options.body?.constructor?.name || input?.body?.constructor?.name || null,
+                        time: new Date().toISOString()
+                    };
+
+                    console.info(PREFIX, 'REQUEST START', requestInfo);
+
+                    try {
+                        const response = await nativeFetch(...args);
+
+                        const result = {
+                            ...requestInfo,
+                            status: response.status,
+                            status_text: response.statusText,
+                            response_url: cleanUrl(response.url || rawUrl),
+                            redirected: response.redirected
+                        };
+
+                        if (!response.ok) {
+                            let preview = '';
+                            try {
+                                preview = (await response.clone().text()).slice(0, 4000);
+                            } catch (e) {
+                                preview = '[response body unavailable: ' + e.message + ']';
+                            }
+
+                            console.error(PREFIX, 'REQUEST FAILED', result);
+                            console.error(PREFIX, 'SERVER RESPONSE PREVIEW:', preview);
+                        } else {
+                            console.info(PREFIX, 'REQUEST OK', result);
+                        }
+
+                        return response;
+                    } catch (error) {
+                        console.error(PREFIX, 'FETCH NETWORK/JS ERROR', {
+                            ...requestInfo,
+                            name: error?.name,
+                            message: error?.message,
+                            stack: error?.stack
+                        });
+                        throw error;
+                    }
+                };
+
+                debugFetch.__capitalCartUploadPatched = true;
+                window.fetch = debugFetch;
+            }
+
+            // Catch any browser-side JavaScript error that happens during upload.
+            window.addEventListener('error', (event) => {
+                const message = String(event.message || '');
+                const filename = String(event.filename || '');
+
+                if (
+                    message.toLowerCase().includes('upload') ||
+                    message.toLowerCase().includes('livewire') ||
+                    filename.toLowerCase().includes('livewire')
+                ) {
+                    console.error(PREFIX, 'GLOBAL JS ERROR', {
+                        message: event.message,
+                        filename: event.filename,
+                        line: event.lineno,
+                        column: event.colno,
+                        error: event.error
+                    });
+                }
+            });
+
+            window.addEventListener('unhandledrejection', (event) => {
+                const reason = event.reason;
+                const text = String(reason?.message || reason || '');
+
+                if (text.toLowerCase().includes('upload') || text.toLowerCase().includes('livewire')) {
+                    console.error(PREFIX, 'UNHANDLED PROMISE REJECTION', reason);
+                }
+            });
+        })();
+    </script>
+
 </div>
