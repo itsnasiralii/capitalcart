@@ -47,6 +47,10 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         xml \
         pcntl
 
+# Allow Livewire/product image uploads up to 5MB with safe request headroom.
+RUN printf "upload_max_filesize=6M\npost_max_size=8M\nmemory_limit=256M\nmax_execution_time=300\n" \
+    > /usr/local/etc/php/conf.d/uploads.ini
+
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
