@@ -33,24 +33,32 @@
 
                 @foreach($images as $idx => $img)
                     <div class="border rounded-3 p-3 mb-3" wire:key="product-image-{{ $idx }}">
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <input type="text"
-                                   wire:model="images.{{ $idx }}.url"
-                                   class="form-control"
-                                   placeholder="Paste image URL (optional)">
-                            @if($idx === 0)
-                                <span class="badge bg-primary">Primary</span>
-                            @else
-                                <button wire:click="removeImage({{ $idx }})" type="button" class="btn btn-sm btn-outline-danger">×</button>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                @if($idx === 0)
+                                    <span class="badge bg-primary">Primary</span>
+                                @else
+                                    <span class="badge bg-light text-dark border">Image {{ $idx + 1 }}</span>
+                                @endif
+                            </div>
+
+                            @if($idx > 0)
+                                <button wire:click="removeImage({{ $idx }})"
+                                        type="button"
+                                        class="btn btn-sm btn-outline-danger">
+                                    Remove
+                                </button>
                             @endif
                         </div>
 
-                        <div class="d-flex align-items-center gap-2">
-                            <input type="file"
-                                   wire:model="imageUploads.{{ $idx }}"
-                                   class="form-control @error('imageUploads.' . $idx) is-invalid @enderror"
-                                   accept="image/jpeg,image/png,image/webp,image/gif">
-                        </div>
+                        <label class="form-label small fw-semibold mb-1">
+                            {{ !empty($img['id']) ? 'Replace image from computer' : 'Choose image from computer' }}
+                        </label>
+
+                        <input type="file"
+                               wire:model="imageUploads.{{ $idx }}"
+                               class="form-control @error('imageUploads.' . $idx) is-invalid @enderror"
+                               accept="image/jpeg,image/png,image/webp,image/gif">
 
                         @error('imageUploads.' . $idx)
                             <div class="text-danger small mt-1">{{ $message }}</div>
@@ -58,7 +66,7 @@
 
                         <div wire:loading wire:target="imageUploads.{{ $idx }}" class="text-primary small mt-2">
                             <span class="spinner-border spinner-border-sm me-1"></span>
-                            Preparing image preview...
+                            Uploading preview...
                         </div>
 
                         @php
@@ -78,13 +86,13 @@
                             <div class="mt-2">
                                 <small class="text-muted d-block mb-1">New image preview:</small>
                                 <img src="{{ $uploadPreview }}"
-                                     style="height:90px;width:90px;object-fit:cover;border-radius:0.5rem;border:1px solid #dee2e6">
+                                     style="height:110px;width:110px;object-fit:cover;border-radius:0.5rem;border:1px solid #dee2e6">
                             </div>
                         @elseif(!empty($img['url']))
                             <div class="mt-2">
                                 <small class="text-muted d-block mb-1">Current image:</small>
                                 <img src="{{ $img['url'] }}"
-                                     style="height:90px;width:90px;object-fit:cover;border-radius:0.5rem;border:1px solid #dee2e6"
+                                     style="height:110px;width:110px;object-fit:cover;border-radius:0.5rem;border:1px solid #dee2e6"
                                      onerror="this.style.display='none'">
                             </div>
                         @endif
@@ -92,7 +100,8 @@
                 @endforeach
 
                 <small class="text-muted">
-                    Upload JPG, PNG, WebP or GIF directly from your computer (max 5MB), or paste an image URL. The first image is the primary image.
+                    Upload JPG, PNG, WebP or GIF directly from your computer. Maximum size: 5MB per image.
+                    Images are saved in the CapitalCart database. The first image is the primary image.
                 </small>
             </div>
 

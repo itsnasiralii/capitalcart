@@ -3,10 +3,27 @@
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AuthController;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\Order;
 use Illuminate\Support\Facades\Route;
 
 // Public
+Route::get('/product-images/{image}', function (ProductImage $image) {
+    $blob = $image->blob;
+    abort_unless($blob, 404);
+
+    $data = $blob->image_data;
+    if (is_resource($data)) {
+        $data = stream_get_contents($data);
+    }
+
+    return response($data, 200, [
+        'Content-Type' => $blob->mime_type,
+        'Content-Length' => (string) ($blob->file_size ?: strlen($data)),
+        'Cache-Control' => 'public, max-age=31536000, immutable',
+    ]);
+})->name('product-images.show');
+
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/shop', function () {
