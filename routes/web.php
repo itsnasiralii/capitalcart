@@ -7,6 +7,9 @@ use App\Models\Order;
 use Illuminate\Support\Facades\Route;
 
 // Public
+Route::get('/media/{media}', [\App\Http\Controllers\MediaController::class, 'show'])
+    ->whereUuid('media')->name('media.show');
+
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/shop', function () {

@@ -13,7 +13,7 @@ class TrackActiveVisitors
         $response = $next($request);
 
         // Only track for regular GET webpage requests
-        if (!$request->isMethod('GET') || $request->ajax() || $request->is('admin*', 'livewire*', 'storage*')) {
+        if (!$request->isMethod('GET') || $request->ajax() || $request->is('admin*', 'livewire*', 'storage*', 'media/*')) {
             return $response;
         }
 

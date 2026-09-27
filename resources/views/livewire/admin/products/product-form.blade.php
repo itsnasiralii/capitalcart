@@ -1,4 +1,9 @@
-<div>
+<div x-data="{ uploading: false, progress: 0, uploadError: '' }"
+     x-on:livewire-upload-start="uploading = true; progress = 0; uploadError = ''"
+     x-on:livewire-upload-finish="uploading = false"
+     x-on:livewire-upload-cancel="uploading = false"
+     x-on:livewire-upload-error="uploading = false; uploadError = 'Upload failed. Choose JPG, PNG, WebP or GIF files up to 5 MB each, and try again.'"
+     x-on:livewire-upload-progress="progress = $event.detail.progress">
     <div class="d-flex align-items-center gap-3 mb-4">
         <a href="{{ route('admin.products.index') }}" class="btn btn-sm btn-outline-secondary">← Back</a>
         <h4 class="font-poppins fw-bold mb-0">{{ $productId ? 'Edit Product' : 'Add New Product' }}</h4>
@@ -28,22 +33,61 @@
             <div class="bg-white rounded-3 border p-4 mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="font-poppins fw-bold mb-0">Product Images</h6>
-                    <button wire:click="addImage" type="button" class="btn btn-sm btn-outline-primary">+ Add Image</button>
+                    <button wire:click="addImage" type="button" class="btn btn-sm btn-outline-primary">+ Add Image URL</button>
                 </div>
+                <label for="productImageUploads" class="form-label fw-semibold">Upload from your device</label>
+                <input id="productImageUploads" type="file" wire:model="newImages" multiple
+                       accept="image/jpeg,image/png,image/webp,image/gif" class="form-control">
+                <p class="small text-muted mt-2 mb-2">Choose up to 8 photos, 5 MB and 16 megapixels each. JPG, PNG, WebP or GIF (saved as a still image). Photos are saved when you save the product.</p>
+                <div x-show="uploading" x-cloak class="small text-primary mb-2" role="status">
+                    Uploading: <span x-text="progress"></span>%
+                </div>
+                <div x-show="uploadError" x-cloak x-text="uploadError" class="alert alert-danger small" role="alert"></div>
+                @error('newImages') <div class="text-danger small" role="alert">{{ $message }}</div> @enderror
+                @error('newImages.*') <div class="text-danger small" role="alert">{{ $message }}</div> @enderror
+                @if($newImages)
+                    <div class="d-flex flex-wrap gap-3 my-3">
+                        @foreach($newImages as $index => $file)
+                            @php
+                                $preview = null;
+                                try { $preview = $file->temporaryUrl(); } catch (\Throwable $e) {}
+                            @endphp
+                            <div wire:key="new-photo-{{ $index }}-{{ $file->getFilename() }}" class="border rounded p-2" style="width:130px">
+                                @if($preview)
+                                    <img src="{{ $preview }}" alt="New product photo {{ $index + 1 }}" class="rounded mb-1" style="width:110px;height:90px;object-fit:contain">
+                                @endif
+                                <div class="small text-truncate" title="{{ $file->getClientOriginalName() }}">{{ $file->getClientOriginalName() }}</div>
+                                <button wire:click="removeNewImage({{ $index }})" type="button" class="btn btn-sm btn-outline-danger mt-1" :disabled="uploading">Remove</button>
+                            </div>
+                        @endforeach
+                    </div>
+                    <label class="form-check mb-3">
+                        <input type="checkbox" wire:model="useUploadedAsPrimary" class="form-check-input">
+                        <span class="form-check-label">Use the first uploaded photo as the main product image</span>
+                    </label>
+                @endif
+                <hr>
+                <p class="small text-muted">Existing images / direct image URLs. Remove an old image to replace it, or choose Make Primary.</p>
                 @foreach($images as $idx => $img)
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <input type="text" wire:model="images.{{ $idx }}.url" class="form-control" placeholder="https://example.com/image.jpg">
+                    <div wire:key="product-image-{{ $idx }}" class="border rounded p-2 mb-2">
+                        <label class="visually-hidden" for="image-url-{{ $idx }}">Image URL {{ $idx + 1 }}</label>
+                        <input id="image-url-{{ $idx }}" type="text" wire:model="images.{{ $idx }}.url" class="form-control mb-2" placeholder="https://example.com/image.jpg">
+                        @error('images.'.$idx.'.url') <div class="text-danger small">{{ $message }}</div> @enderror
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                        @if(!empty($img['url']))
+                            <img src="{{ $img['url'] }}" alt="Product image {{ $idx + 1 }}" style="height:60px;width:60px;object-fit:cover;border-radius:0.375rem">
+                        @endif
                         @if($idx === 0)
                             <span class="badge bg-primary">Primary</span>
                         @else
-                            <button wire:click="removeImage({{ $idx }})" type="button" class="btn btn-sm btn-outline-danger">×</button>
+                            <button wire:click="makePrimary({{ $idx }})" type="button" class="btn btn-sm btn-outline-primary">Make Primary</button>
                         @endif
+                        <button wire:click="removeImage({{ $idx }})" type="button" class="btn btn-sm btn-outline-danger">Remove</button>
+                        </div>
                     </div>
-                    @if(!empty($img['url']))
-                        <img src="{{ $img['url'] }}" style="height:60px;width:60px;object-fit:cover;border-radius:0.375rem;margin-bottom:0.5rem" onerror="this.style.display='none'">
-                    @endif
                 @endforeach
-                <small class="text-muted">Use URLs from picsum.photos or any image host. First image will be the primary.</small>
+                @error('images') <div class="text-danger small">{{ $message }}</div> @enderror
+                <small class="text-muted">Google Drive preview links are not direct image URLs. Download the photo to your laptop, then upload it above.</small>
             </div>
 
             {{-- Variants --}}
@@ -169,7 +213,9 @@
                 </div>
             </div>
 
-            <button wire:click="save" type="button" class="btn btn-primary w-100 btn-lg">
+            @error('save') <div class="alert alert-danger" role="alert">{{ $message }}</div> @enderror
+            <button wire:click="save" type="button" class="btn btn-primary w-100 btn-lg" wire:loading.attr="disabled" :disabled="uploading || uploadError !== ''">
+                <span wire:loading wire:target="save" class="spinner-border spinner-border-sm me-1"></span>
                 {{ $productId ? 'Save Changes' : 'Create Product' }}
             </button>
             <a href="{{ route('admin.products.index') }}" class="btn btn-outline-secondary w-100 mt-2">Cancel</a>

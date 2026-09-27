@@ -137,6 +137,33 @@ class OrderCreationAndWhatsAppTest extends TestCase
 
         $waUrl = $orderService->getWhatsAppUrlForOrder($order);
         $this->assertStringStartsWith('https://wa.me/923002922584?text=', $waUrl);
+        $this->assertTrue(mb_check_encoding($message, 'UTF-8'));
+        $this->assertStringNotContainsString("\u{FFFD}", $message);
+        foreach (["\u{1F6D2}", "\u{1F4E6}", "\u{1F464}", "\u{1F4DE}", "\u{1F4CB}", "\u{1F69A}", "\u{1F4B0}", "\u{2705}"] as $emoji) {
+            $this->assertStringContainsString($emoji, $message);
+        }
+        $this->assertStringContainsString('03002922584', $message);
+        $this->assertStringContainsString('1 x Rs. 2,500.00', $message);
+        $this->assertSame($message, rawurldecode(explode('?text=', $waUrl, 2)[1]));
+        $this->assertStringContainsString('%F0%9F%9B%92', $waUrl);
+    }
+
+    public function test_iqbal_herbal_orders_keep_their_own_whatsapp_number_and_unicode_names(): void
+    {
+        $this->category->update(['whatsapp_number' => '03009362584']);
+        $this->product->update(['name' => 'Herbal Cream & Oil + 50%']);
+        $cart = app(CartService::class);
+        $cart->add($this->product->id, null, 2);
+        $service = app(OrderService::class);
+        $billing = ['name' => 'ناصر علی', 'phone' => '03001234567'];
+        $order = $service->createOrder($billing, $billing);
+        $url = $service->getWhatsAppUrlForOrder($order);
+        $this->assertStringStartsWith('https://wa.me/923009362584?text=', $url);
+        parse_str(parse_url($url, PHP_URL_QUERY), $query);
+        $this->assertSame($service->generateWhatsAppMessage($order), $query['text']);
+        $this->assertStringContainsString('ناصر علی', $query['text']);
+        $this->assertStringContainsString('Herbal Cream & Oil + 50%', $query['text']);
+        $this->assertStringContainsString('03001234567', $query['text']);
     }
 
     public function test_guest_checkout_via_livewire_rejects_invalid_phone(): void

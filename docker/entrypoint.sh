@@ -41,6 +41,7 @@ mkdir -p /var/www/html/storage/framework/sessions \
          /var/www/html/storage/logs \
          /var/www/html/storage/app/public/hero-slides \
          /var/www/html/storage/app/public/categories \
+         /var/www/html/storage/app/private/livewire-tmp \
          /var/www/html/bootstrap/cache
 
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
@@ -57,7 +58,7 @@ php artisan storage:link --force || true
 
 # Run database migrations unconditionally
 echo "Running database migrations..."
-php artisan migrate --force || true
+php artisan migrate --force
 
 # Seed database only if it is empty (prevents duplicate data on restarts)
 echo "Checking if database needs seeding..."
