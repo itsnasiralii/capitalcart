@@ -30,20 +30,70 @@
                     <h6 class="font-poppins fw-bold mb-0">Product Images</h6>
                     <button wire:click="addImage" type="button" class="btn btn-sm btn-outline-primary">+ Add Image</button>
                 </div>
+
                 @foreach($images as $idx => $img)
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <input type="text" wire:model="images.{{ $idx }}.url" class="form-control" placeholder="https://example.com/image.jpg">
-                        @if($idx === 0)
-                            <span class="badge bg-primary">Primary</span>
-                        @else
-                            <button wire:click="removeImage({{ $idx }})" type="button" class="btn btn-sm btn-outline-danger">×</button>
+                    <div class="border rounded-3 p-3 mb-3" wire:key="product-image-{{ $idx }}">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <input type="text"
+                                   wire:model="images.{{ $idx }}.url"
+                                   class="form-control"
+                                   placeholder="Paste image URL (optional)">
+                            @if($idx === 0)
+                                <span class="badge bg-primary">Primary</span>
+                            @else
+                                <button wire:click="removeImage({{ $idx }})" type="button" class="btn btn-sm btn-outline-danger">×</button>
+                            @endif
+                        </div>
+
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="file"
+                                   wire:model="imageUploads.{{ $idx }}"
+                                   class="form-control @error('imageUploads.' . $idx) is-invalid @enderror"
+                                   accept="image/jpeg,image/png,image/webp,image/gif">
+                        </div>
+
+                        @error('imageUploads.' . $idx)
+                            <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
+
+                        <div wire:loading wire:target="imageUploads.{{ $idx }}" class="text-primary small mt-2">
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                            Preparing image preview...
+                        </div>
+
+                        @php
+                            $uploadPreview = null;
+                            $pendingUpload = $imageUploads[$idx] ?? null;
+
+                            if ($pendingUpload) {
+                                try {
+                                    $uploadPreview = $pendingUpload->temporaryUrl();
+                                } catch (\Throwable $e) {
+                                    $uploadPreview = null;
+                                }
+                            }
+                        @endphp
+
+                        @if($uploadPreview)
+                            <div class="mt-2">
+                                <small class="text-muted d-block mb-1">New image preview:</small>
+                                <img src="{{ $uploadPreview }}"
+                                     style="height:90px;width:90px;object-fit:cover;border-radius:0.5rem;border:1px solid #dee2e6">
+                            </div>
+                        @elseif(!empty($img['url']))
+                            <div class="mt-2">
+                                <small class="text-muted d-block mb-1">Current image:</small>
+                                <img src="{{ $img['url'] }}"
+                                     style="height:90px;width:90px;object-fit:cover;border-radius:0.5rem;border:1px solid #dee2e6"
+                                     onerror="this.style.display='none'">
+                            </div>
                         @endif
                     </div>
-                    @if(!empty($img['url']))
-                        <img src="{{ $img['url'] }}" style="height:60px;width:60px;object-fit:cover;border-radius:0.375rem;margin-bottom:0.5rem" onerror="this.style.display='none'">
-                    @endif
                 @endforeach
-                <small class="text-muted">Use URLs from picsum.photos or any image host. First image will be the primary.</small>
+
+                <small class="text-muted">
+                    Upload JPG, PNG, WebP or GIF directly from your computer (max 5MB), or paste an image URL. The first image is the primary image.
+                </small>
             </div>
 
             {{-- Variants --}}
