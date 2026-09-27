@@ -8,17 +8,23 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('product_images', function (Blueprint $table) {
-            $table->binary('image_data')->nullable()->after('image_url');
-            $table->string('mime_type', 100)->nullable()->after('image_data');
-            $table->unsignedInteger('file_size')->nullable()->after('mime_type');
+        // Keep binary payloads in a separate table so normal product/image
+        // queries do not load megabytes of image data into memory.
+        Schema::create('product_image_blobs', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('product_image_id')
+                ->unique()
+                ->constrained('product_images')
+                ->cascadeOnDelete();
+            $table->binary('image_data');
+            $table->string('mime_type', 100);
+            $table->unsignedInteger('file_size')->nullable();
+            $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::table('product_images', function (Blueprint $table) {
-            $table->dropColumn(['image_data', 'mime_type', 'file_size']);
-        });
+        Schema::dropIfExists('product_image_blobs');
     }
 };
