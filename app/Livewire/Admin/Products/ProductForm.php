@@ -194,12 +194,15 @@ class ProductForm extends Component
                 }
 
                 $image->update([
-                    'image_data' => $binary,
-                    'mime_type'  => $upload->getMimeType() ?: 'application/octet-stream',
-                    'file_size'  => $upload->getSize(),
                     'image_url'  => '/product-images/' . $image->id,
                     'is_primary' => $idx === 0,
                     'sort_order' => $idx,
+                ]);
+
+                $image->blob()->updateOrCreate([], [
+                    'image_data' => $binary,
+                    'mime_type'  => $upload->getMimeType() ?: 'application/octet-stream',
+                    'file_size'  => $upload->getSize(),
                 ]);
 
                 $keptImageIds[] = $image->id;
