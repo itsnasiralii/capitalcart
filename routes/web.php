@@ -9,16 +9,17 @@ use Illuminate\Support\Facades\Route;
 
 // Public
 Route::get('/product-images/{image}', function (ProductImage $image) {
-    abort_unless($image->image_data && $image->mime_type, 404);
+    $blob = $image->blob;
+    abort_unless($blob, 404);
 
-    $data = $image->image_data;
+    $data = $blob->image_data;
     if (is_resource($data)) {
         $data = stream_get_contents($data);
     }
 
     return response($data, 200, [
-        'Content-Type' => $image->mime_type,
-        'Content-Length' => (string) ($image->file_size ?: strlen($data)),
+        'Content-Type' => $blob->mime_type,
+        'Content-Length' => (string) ($blob->file_size ?: strlen($data)),
         'Cache-Control' => 'public, max-age=31536000, immutable',
     ]);
 })->name('product-images.show');
