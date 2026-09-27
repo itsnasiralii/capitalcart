@@ -56,46 +56,29 @@
                         </label>
 
                         <input type="file"
-                               wire:model="imageUploads.{{ $idx }}"
-                               class="form-control @error('imageUploads.' . $idx) is-invalid @enderror"
-                               accept="image/jpeg,image/png,image/webp,image/gif">
+                               class="form-control js-product-image-upload"
+                               accept="image/jpeg,image/png,image/webp,image/gif"
+                               data-index="{{ $idx }}"
+                               data-existing-image-id="{{ $img['id'] ?? '' }}"
+                               data-upload-url="{{ $productId ? route('admin.products.images.upload', $productId) : '' }}"
+                               {{ $productId ? '' : 'disabled' }}>
 
-                        @error('imageUploads.' . $idx)
-                            <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
-
-                        <div wire:loading wire:target="imageUploads.{{ $idx }}" class="text-primary small mt-2">
-                            <span class="spinner-border spinner-border-sm me-1"></span>
-                            Uploading preview...
+                        <div class="small mt-2 js-product-upload-status text-muted" data-index="{{ $idx }}">
+                            @if($productId)
+                                Select an image to upload directly to the database.
+                            @else
+                                Create the product first, then add images.
+                            @endif
                         </div>
 
-                        @php
-                            $uploadPreview = null;
-                            $pendingUpload = $imageUploads[$idx] ?? null;
-
-                            if ($pendingUpload) {
-                                try {
-                                    $uploadPreview = $pendingUpload->temporaryUrl();
-                                } catch (\Throwable $e) {
-                                    $uploadPreview = null;
-                                }
-                            }
-                        @endphp
-
-                        @if($uploadPreview)
-                            <div class="mt-2">
-                                <small class="text-muted d-block mb-1">New image preview:</small>
-                                <img src="{{ $uploadPreview }}"
-                                     style="height:110px;width:110px;object-fit:cover;border-radius:0.5rem;border:1px solid #dee2e6">
-                            </div>
-                        @elseif(!empty($img['url']))
-                            <div class="mt-2">
-                                <small class="text-muted d-block mb-1">Current image:</small>
-                                <img src="{{ $img['url'] }}"
-                                     style="height:110px;width:110px;object-fit:cover;border-radius:0.5rem;border:1px solid #dee2e6"
-                                     onerror="this.style.display='none'">
-                            </div>
-                        @endif
+                        <div class="mt-2">
+                            <small class="text-muted d-block mb-1">Current image:</small>
+                            <img
+                                class="js-product-image-preview {{ empty($img['url']) ? 'd-none' : '' }}"
+                                src="{{ $img['url'] ?? '' }}"
+                                style="height:110px;width:110px;object-fit:cover;border-radius:0.5rem;border:1px solid #dee2e6"
+                                onerror="this.style.display='none'">
+                        </div>
                     </div>
                 @endforeach
 
@@ -234,6 +217,191 @@
             <a href="{{ route('admin.products.index') }}" class="btn btn-outline-secondary w-100 mt-2">Cancel</a>
         </div>
     </div>
+
+
+    <script>
+        (() => {
+            if (window.__capitalCartDirectImageUpload) return;
+            window.__capitalCartDirectImageUpload = true;
+
+            const PREFIX = '[CapitalCart Direct Upload]';
+
+            const getCsrf = () =>
+                document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+            const getComponent = (input) => {
+                const root = input.closest('[wire\\:id]');
+                const id = root?.getAttribute('wire:id');
+
+                if (!id || !window.Livewire?.find) return null;
+
+                return window.Livewire.find(id);
+            };
+
+            document.addEventListener('change', async (event) => {
+                const input = event.target;
+
+                if (!(input instanceof HTMLInputElement)) return;
+                if (!input.classList.contains('js-product-image-upload')) return;
+
+                const file = input.files?.[0];
+                if (!file) return;
+
+                const row = input.closest('.border.rounded-3.p-3.mb-3');
+                const status = row?.querySelector('.js-product-upload-status');
+                const preview = row?.querySelector('.js-product-image-preview');
+                const uploadUrl = input.dataset.uploadUrl || '';
+                const index = Number(input.dataset.index || 0);
+                const existingImageId = input.dataset.existingImageId || '';
+
+                console.group(PREFIX + ' START');
+                console.info('file', {
+                    name: file.name,
+                    size_bytes: file.size,
+                    size_mb: Number((file.size / 1024 / 1024).toFixed(2)),
+                    type: file.type,
+                    index,
+                    existing_image_id: existingImageId || null,
+                    upload_url: uploadUrl
+                });
+
+                if (!uploadUrl) {
+                    const message = 'Upload URL is missing. Save the product first.';
+                    console.error(PREFIX, message);
+                    if (status) {
+                        status.className = 'small mt-2 js-product-upload-status text-danger';
+                        status.textContent = message;
+                    }
+                    console.groupEnd();
+                    return;
+                }
+
+                if (file.size > 20 * 1024 * 1024) {
+                    const message = 'File is larger than 20MB.';
+                    console.error(PREFIX, message);
+                    if (status) {
+                        status.className = 'small mt-2 js-product-upload-status text-danger';
+                        status.textContent = message;
+                    }
+                    input.value = '';
+                    console.groupEnd();
+                    return;
+                }
+
+                const localPreview = URL.createObjectURL(file);
+                if (preview) {
+                    preview.src = localPreview;
+                    preview.style.display = '';
+                    preview.classList.remove('d-none');
+                }
+
+                if (status) {
+                    status.className = 'small mt-2 js-product-upload-status text-primary';
+                    status.textContent = 'Uploading directly to database...';
+                }
+
+                input.disabled = true;
+
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('index', String(index));
+                if (existingImageId) {
+                    formData.append('existing_image_id', existingImageId);
+                }
+
+                try {
+                    const response = await fetch(uploadUrl, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': getCsrf(),
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData,
+                        credentials: 'same-origin'
+                    });
+
+                    const raw = await response.text();
+                    let data = null;
+
+                    try {
+                        data = raw ? JSON.parse(raw) : {};
+                    } catch (parseError) {
+                        data = { raw_response: raw };
+                    }
+
+                    console.info(PREFIX, 'HTTP RESPONSE', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        ok: response.ok,
+                        data
+                    });
+
+                    if (!response.ok) {
+                        const validationErrors = data?.errors
+                            ? Object.values(data.errors).flat().join(' ')
+                            : '';
+
+                        throw new Error(
+                            validationErrors ||
+                            data?.message ||
+                            'Upload failed with HTTP ' + response.status
+                        );
+                    }
+
+                    input.dataset.existingImageId = String(data.image_id || '');
+                    input.value = '';
+
+                    if (preview && data.image_url) {
+                        preview.src = data.image_url;
+                        preview.style.display = '';
+                        preview.classList.remove('d-none');
+                    }
+
+                    const component = getComponent(input);
+
+                    if (component && data.image_id && data.image_url) {
+                        await component.call(
+                            'registerDirectImageUpload',
+                            index,
+                            Number(data.image_id),
+                            String(data.image_url)
+                        );
+                    } else {
+                        console.warn(PREFIX, 'Livewire state sync skipped', {
+                            component_found: Boolean(component),
+                            image_id: data.image_id,
+                            image_url: data.image_url
+                        });
+                    }
+
+                    if (status) {
+                        status.className = 'small mt-2 js-product-upload-status text-success';
+                        status.textContent = '✓ Image uploaded successfully to database.';
+                    }
+
+                    console.info(PREFIX, 'SUCCESS', data);
+                } catch (error) {
+                    console.error(PREFIX, 'FAILED', {
+                        name: error?.name,
+                        message: error?.message,
+                        stack: error?.stack
+                    });
+
+                    if (status) {
+                        status.className = 'small mt-2 js-product-upload-status text-danger';
+                        status.textContent = 'Upload failed: ' + (error?.message || 'Unknown error');
+                    }
+                } finally {
+                    input.disabled = false;
+                    URL.revokeObjectURL(localPreview);
+                    console.groupEnd();
+                }
+            }, true);
+
+            console.info(PREFIX, 'Direct database uploader enabled. Livewire temporary file upload is bypassed.');
+        })();
+    </script>
 
     <script>
         (() => {

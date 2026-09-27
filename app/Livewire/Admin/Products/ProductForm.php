@@ -132,6 +132,33 @@ class ProductForm extends Component
         $this->imageUploads = $reindexedUploads;
     }
 
+    public function registerDirectImageUpload(int $index, int $imageId, string $imageUrl): void
+    {
+        if (!$this->productId) {
+            return;
+        }
+
+        $image = ProductImage::query()
+            ->where('product_id', $this->productId)
+            ->find($imageId);
+
+        if (!$image) {
+            return;
+        }
+
+        if (!isset($this->images[$index])) {
+            $this->images[$index] = [
+                'id' => null,
+                'url' => '',
+                'is_primary' => $index === 0,
+            ];
+        }
+
+        $this->images[$index]['id'] = $image->id;
+        $this->images[$index]['url'] = $imageUrl;
+        $this->images[$index]['is_primary'] = $index === 0;
+    }
+
     public function addVariant(): void
     {
         $this->variants[] = [
