@@ -11,6 +11,7 @@ use App\Models\ProductVariant;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\Attributes\Computed;
+use Illuminate\Support\Facades\Log;
 
 class ProductForm extends Component
 {
@@ -88,6 +89,22 @@ class ProductForm extends Component
     public function attributeTypes()
     {
         return AttributeType::with('attributes')->get();
+    }
+
+    public function updatedImageUploads($value, $key): void
+    {
+        Log::info('[UPLOAD-DEBUG][COMPONENT]', [
+            'product_id' => $this->productId,
+            'array_key' => $key,
+            'received' => $value !== null,
+            'class' => is_object($value) ? get_class($value) : gettype($value),
+            'original_name' => is_object($value) && method_exists($value, 'getClientOriginalName')
+                ? $value->getClientOriginalName()
+                : null,
+            'size' => is_object($value) && method_exists($value, 'getSize')
+                ? $value->getSize()
+                : null,
+        ]);
     }
 
     public function addImage(): void
