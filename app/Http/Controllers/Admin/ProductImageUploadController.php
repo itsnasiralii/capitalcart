@@ -24,23 +24,6 @@ class ProductImageUploadController extends Controller
             ? (int) $validated['existing_image_id']
             : null;
 
-        $image = null;
-
-        if ($existingId) {
-            $image = ProductImage::query()
-                ->where('product_id', $product->id)
-                ->find($existingId);
-        }
-
-        if (!$image) {
-            $image = ProductImage::create([
-                'product_id' => $product->id,
-                'image_url' => '',
-                'is_primary' => $index === 0,
-                'sort_order' => $index,
-            ]);
-        }
-
         try {
             $prepared = $this->prepareImage($request->file('image'));
 
@@ -49,6 +32,23 @@ class ProductImageUploadController extends Controller
                     'message' => 'The selected image could not be processed.',
                     'error_code' => 'IMAGE_PROCESSING_FAILED',
                 ], 422);
+            }
+
+            $image = null;
+
+            if ($existingId) {
+                $image = ProductImage::query()
+                    ->where('product_id', $product->id)
+                    ->find($existingId);
+            }
+
+            if (!$image) {
+                $image = ProductImage::create([
+                    'product_id' => $product->id,
+                    'image_url' => '',
+                    'is_primary' => $index === 0,
+                    'sort_order' => $index,
+                ]);
             }
 
             if ($index === 0) {
@@ -83,7 +83,10 @@ class ProductImageUploadController extends Controller
             return response()->json([
                 'message' => 'Image upload failed on the server.',
                 'error_code' => 'SERVER_UPLOAD_FAILED',
-                'exception' => app()->environment('production') ? null : get_class($e),
+                'exception_type' => get_class($e),
+                'exception_message' => $e->getMessage(),
+                'exception_file' => basename($e->getFile()),
+                'exception_line' => $e->getLine(),
             ], 500);
         }
     }
