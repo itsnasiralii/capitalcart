@@ -47,6 +47,16 @@ mkdir -p /var/www/html/storage/framework/sessions \
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
+# FIX: Create nginx temp directories with correct permissions
+# Without this, nginx fails with "Permission denied" on /var/lib/nginx/tmp/client_body
+# when handling file uploads (images), causing HTTP 500 errors.
+mkdir -p /tmp/nginx_client_body \
+         /tmp/nginx_proxy \
+         /tmp/nginx_fastcgi \
+         /tmp/nginx_uwsgi \
+         /tmp/nginx_scgi
+chmod 777 /tmp/nginx_client_body /tmp/nginx_proxy /tmp/nginx_fastcgi /tmp/nginx_uwsgi /tmp/nginx_scgi
+
 # If SQLite is used, ensure database file exists
 if [ "$DB_CONNECTION" = "sqlite" ] || [ -z "$DB_CONNECTION" ]; then
     touch /var/www/html/database/database.sqlite
