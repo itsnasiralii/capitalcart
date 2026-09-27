@@ -43,9 +43,10 @@ class AppServiceProvider extends ServiceProvider
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
 
-        // Force APP_URL for correct asset/Livewire URL generation
-        if ($appUrl = env('APP_URL')) {
-            \Illuminate\Support\Facades\URL::forceRootUrl($appUrl);
-        }
+        // Do not force APP_URL as the request host in production.
+        // Livewire temporary uploads use signed URLs, and forcing a different
+        // hostname (for example an old Render service URL) invalidates the
+        // signature. Because Render's proxy headers are trusted above, Laravel
+        // can safely generate URLs from the actual incoming host.
     }
 }
