@@ -166,7 +166,7 @@
                         $variantName = $v ? ' (' . $v->variantAttributes->pluck('value')->implode(', ') . ')' : '';
                     }
                     $storeName = $product->category?->whatsapp_number ? $product->category->name : 'CapitalCart';
-                    $productWaMsg = "Assalam-o-Alaikum {$storeName}!\nI want to order this product:\n\n*Product:* " . $product->name . $variantName . "\n*Price:* Rs. " . number_format($this->effectivePrice, 0) . "\n*Qty:* " . $quantity . "\n*Link:* " . request()->fullUrl();
+                    $productWaMsg = "Assalam-o-Alaikum {$storeName}!\nI want to order this product:\n\n*Product:* " . $product->name . $variantName . "\n*Price:* Rs. " . number_format($this->effectivePrice, 0) . "\n*Qty:* " . $quantity . "\n*Link:* " . route('product.show', $product->slug);
                     $productWaUrl = $product->category
                         ? $product->category->getWhatsAppUrl($productWaMsg)
                         : \App\Models\Setting::getWhatsAppUrl($productWaMsg);
