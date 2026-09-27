@@ -1,0 +1,89 @@
+name: Render deployment check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/deployment-smoke.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: render-production-check
+  cancel-in-progress: true
+
+jobs:
+  public-pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Wait for the image-upload release and verify public routes
+        shell: python
+        run: |
+          import os
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          from pathlib import Path
+
+          base = "https://capitalcart.onrender.com"
+          expected = Path("public/images/hero-fallback.svg").read_bytes()
+          results = []
+
+          def fetch(path):
+              request = urllib.request.Request(base + path, headers={
+                  "User-Agent": "CapitalCart deployment health check",
+                  "Cache-Control": "no-cache",
+              })
+              try:
+                  with urllib.request.urlopen(request, timeout=25) as response:
+                      return response.status, response.read(), response.url
+              except urllib.error.HTTPError as error:
+                  return error.code, b"", error.url
+              except (urllib.error.URLError, TimeoutError) as error:
+                  print("Connection not ready: " + type(error).__name__, flush=True)
+                  return 0, b"", base + path
+
+          deadline = time.monotonic() + 600
+          while True:
+              status, body, _ = fetch("/images/hero-fallback.svg")
+              if status == 200 and body == expected:
+                  results.append("Release image matches the checked-in fallback.")
+                  break
+              if time.monotonic() >= deadline:
+                  raise SystemExit("Render did not serve the expected release within 10 minutes. Check the Render deploy logs.")
+              print(f"Waiting for Render release (HTTP {status}); retrying in 15 seconds.", flush=True)
+              time.sleep(15)
+
+          for path in ["/", "/shop", "/cart", "/login"]:
+              status, body, url = fetch(path)
+              if status != 200:
+                  raise SystemExit(f"{path}: expected HTTP 200, got {status}")
+              if path == "/login" and b"Admin demo credentials" in body:
+                  raise SystemExit("Login still exposes old demo-credential text.")
+              results.append(f"{path}: HTTP 200")
+
+          for path in ["/admin/products", "/admin/categories", "/admin/hero-slides"]:
+              status, _, url = fetch(path)
+              if status != 200 or urllib.parse.urlsplit(url).path != "/login":
+                  raise SystemExit(f"{path}: expected a protected login redirect")
+              results.append(f"{path}: guest redirected to login")
+
+          status, _, _ = fetch("/media/00000000-0000-4000-8000-000000000000")
+          if status != 404:
+              raise SystemExit(f"Missing media should return 404, got {status}")
+          results.append("Missing media: HTTP 404")
+
+          for result in results:
+              print(result, flush=True)
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write("Render public-page verification\n\n")
+              summary.write("\n".join("- " + result for result in results) + "\n")
+              summary.write("\nThis check does not sign in, upload images, or submit orders.\n")
