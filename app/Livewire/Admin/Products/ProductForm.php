@@ -194,7 +194,7 @@ class ProductForm extends Component
                 }
 
                 $image->update([
-                    'image_url'  => '/product-images/' . $image->id,
+                    'image_url'  => '/product-images/' . $image->id . '?v=' . time(),
                     'is_primary' => $idx === 0,
                     'sort_order' => $idx,
                 ]);
