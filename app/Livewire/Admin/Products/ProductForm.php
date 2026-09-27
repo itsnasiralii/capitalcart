@@ -33,7 +33,8 @@ class ProductForm extends Component
     public bool $is_variable       = false;
 
     // Images
-    public array $images = [['url' => '', 'is_primary' => true]];
+    // Existing database image IDs are kept here; new files are handled by $imageUploads.
+    public array $images = [['id' => null, 'url' => '', 'is_primary' => true]];
     public array $imageUploads = [];
 
     // Variants
@@ -59,12 +60,13 @@ class ProductForm extends Component
             $this->is_variable       = $product->is_variable;
 
             $this->images = $product->images->map(fn($img) => [
+                'id'         => $img->id,
                 'url'        => $img->image_url,
                 'is_primary' => $img->is_primary,
             ])->toArray();
 
             if (empty($this->images)) {
-                $this->images = [['url' => '', 'is_primary' => true]];
+                $this->images = [['id' => null, 'url' => '', 'is_primary' => true]];
             }
 
             $this->variants = $product->allVariants->map(fn($v) => [
@@ -90,7 +92,7 @@ class ProductForm extends Component
 
     public function addImage(): void
     {
-        $this->images[] = ['url' => '', 'is_primary' => false];
+        $this->images[] = ['id' => null, 'url' => '', 'is_primary' => false];
     }
 
     public function removeImage(int $index): void
@@ -163,25 +165,61 @@ class ProductForm extends Component
             $product = Product::create($data);
         }
 
-        // Store any images selected from the admin's computer first.
-        foreach ($this->imageUploads as $idx => $upload) {
-            if (!$upload) {
+        // Sync images. New/replacement images are stored directly in the database.
+        $keptImageIds = [];
+
+        foreach ($this->images as $idx => $imgMeta) {
+            $upload = $this->imageUploads[$idx] ?? null;
+            $imageId = !empty($imgMeta['id']) ? (int) $imgMeta['id'] : null;
+
+            $image = $imageId
+                ? ProductImage::where('product_id', $product->id)->find($imageId)
+                : null;
+
+            if ($upload) {
+                $binary = file_get_contents($upload->getRealPath());
+
+                if ($binary === false) {
+                    $this->addError("imageUploads.$idx", 'The selected image could not be read. Please try again.');
+                    return;
+                }
+
+                if (!$image) {
+                    $image = ProductImage::create([
+                        'product_id' => $product->id,
+                        'image_url'  => '',
+                        'is_primary' => $idx === 0,
+                        'sort_order' => $idx,
+                    ]);
+                }
+
+                $image->update([
+                    'image_data' => $binary,
+                    'mime_type'  => $upload->getMimeType() ?: 'application/octet-stream',
+                    'file_size'  => $upload->getSize(),
+                    'image_url'  => '/product-images/' . $image->id,
+                    'is_primary' => $idx === 0,
+                    'sort_order' => $idx,
+                ]);
+
+                $keptImageIds[] = $image->id;
                 continue;
             }
 
-            $path = $upload->store('products', 'public');
-            $this->images[(int) $idx]['url'] = '/storage/' . $path;
+            // Keep an existing image if this row was not replaced.
+            if ($image) {
+                $image->update([
+                    'is_primary' => $idx === 0,
+                    'sort_order' => $idx,
+                ]);
+                $keptImageIds[] = $image->id;
+            }
         }
 
-        // Sync Images
-        $product->images()->delete();
-        foreach (array_filter($this->images, fn($i) => !empty($i['url'])) as $idx => $img) {
-            ProductImage::create([
-                'product_id' => $product->id,
-                'image_url'  => $img['url'],
-                'is_primary' => $idx === 0,
-                'sort_order' => $idx,
-            ]);
+        if (empty($keptImageIds)) {
+            $product->images()->delete();
+        } else {
+            $product->images()->whereNotIn('id', $keptImageIds)->delete();
         }
 
         // Sync Variants
