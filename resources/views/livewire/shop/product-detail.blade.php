@@ -165,8 +165,11 @@
                         $v = $product->variants->firstWhere('id', $selectedVariantId);
                         $variantName = $v ? ' (' . $v->variantAttributes->pluck('value')->implode(', ') . ')' : '';
                     }
-                    $productWaMsg = "Assalam-o-Alaikum CapitalCart!\nI want to order this product:\n\n*Product:* " . $product->name . $variantName . "\n*Price:* Rs. " . number_format($this->effectivePrice, 0) . "\n*Qty:* " . $quantity . "\n*Link:* " . request()->fullUrl();
-                    $productWaUrl = \App\Models\Setting::getWhatsAppUrl($productWaMsg);
+                    $storeName = $product->category?->whatsapp_number ? $product->category->name : 'CapitalCart';
+                    $productWaMsg = "Assalam-o-Alaikum {$storeName}!\nI want to order this product:\n\n*Product:* " . $product->name . $variantName . "\n*Price:* Rs. " . number_format($this->effectivePrice, 0) . "\n*Qty:* " . $quantity . "\n*Link:* " . request()->fullUrl();
+                    $productWaUrl = $product->category
+                        ? $product->category->getWhatsAppUrl($productWaMsg)
+                        : \App\Models\Setting::getWhatsAppUrl($productWaMsg);
                 @endphp
                 <div class="mb-3">
                     <a href="{{ $productWaUrl }}" target="_blank" class="btn btn-outline-success w-100 py-2 d-flex align-items-center justify-content-center gap-2 fw-semibold" style="border-color:#25D366;color:#15803d">
