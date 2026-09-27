@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Admin\ProductImageUploadController;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\Order;
@@ -118,6 +119,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/products', \App\Livewire\Admin\Products\ProductList::class)->name('products.index');
     Route::get('/products/create', \App\Livewire\Admin\Products\ProductForm::class)->name('products.create');
     Route::get('/products/{id}/edit', \App\Livewire\Admin\Products\ProductForm::class)->name('products.edit');
+    Route::post('/products/{product}/images/upload', [ProductImageUploadController::class, 'store'])->name('products.images.upload');
     Route::get('/products/{id}/inventory', \App\Livewire\Admin\Products\InventoryManager::class)->name('products.inventory');
     Route::get('/categories', \App\Livewire\Admin\Categories\CategoryManager::class)->name('categories.index');
     Route::get('/hero-slides', \App\Livewire\Admin\HeroSlides\SlideList::class)->name('hero-slides.index');
