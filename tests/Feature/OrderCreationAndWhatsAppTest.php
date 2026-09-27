@@ -181,6 +181,26 @@ class OrderCreationAndWhatsAppTest extends TestCase
         $this->assertDatabaseCount('orders', 0);
     }
 
+    public function test_full_whatsapp_message_is_available_only_to_the_checkout_session_for_24_hours(): void
+    {
+        app(CartService::class)->add($this->product->id, null, 1);
+        $billing = ['name' => 'Customer', 'phone' => '03451234567'];
+        $service = app(OrderService::class);
+        $order = $service->createOrder($billing, $billing);
+        $this->get(route('order.confirmation', $order->order_number))
+            ->assertOk()->assertDontSee('03451234567')->assertSee('Send Order Details on WhatsApp');
+        $this->get(route('order.whatsapp', $order->order_number))
+            ->assertRedirect($service->getWhatsAppUrlForOrder($order));
+
+        $this->travel(25)->hours();
+        $this->get(route('order.whatsapp', $order->order_number))->assertForbidden();
+        $this->travelBack();
+        session()->forget('whatsapp_order_access');
+        $this->get(route('order.whatsapp', $order->order_number))->assertForbidden();
+        $this->get(route('order.confirmation', $order->order_number))
+            ->assertOk()->assertDontSee('03451234567')->assertDontSee('Send Order Details on WhatsApp');
+    }
+
     public function test_guest_checkout_via_livewire_succeeds_with_pakistani_phone(): void
     {
         $cart = app(CartService::class);

@@ -113,15 +113,15 @@ class CategoryManager extends Component
                     : $category->image_url;
 
                 $category->fill([
-                'name'        => $this->name,
-                'slug'        => Str::slug($this->slug),
-                'description' => $this->description ?: null,
-                'whatsapp_number' => $this->whatsapp_number !== ''
-                    ? PhoneHelper::toLocal($this->whatsapp_number)
-                    : null,
-                'sort_order'  => $this->sort_order,
-                'is_active'   => $this->is_active,
-                'image_url'   => $imageUrl,
+                    'name'        => $this->name,
+                    'slug'        => Str::slug($this->slug),
+                    'description' => $this->description ?: null,
+                    'whatsapp_number' => $this->whatsapp_number !== ''
+                        ? PhoneHelper::toLocal($this->whatsapp_number)
+                        : null,
+                    'sort_order'  => $this->sort_order,
+                    'is_active'   => $this->is_active,
+                    'image_url'   => $imageUrl,
                 ])->save();
             });
         } catch (ValidationException $exception) {

@@ -38,6 +38,16 @@ Route::get('/order-confirmation/{orderNumber}', function (string $orderNumber) {
     return view('pages.order-confirmation', compact('order'));
 })->name('order.confirmation');
 
+Route::get('/order-confirmation/{orderNumber}/whatsapp', function (string $orderNumber) {
+    $order = Order::with('items')->where('order_number', $orderNumber)->firstOrFail();
+    $service = app(\App\Services\OrderService::class);
+    abort_unless($service->canOpenWhatsApp($order), 403, 'Open this order from the browser used at checkout, within 24 hours.');
+
+    return redirect()->away($service->getWhatsAppUrlForOrder($order))
+        ->header('Cache-Control', 'private, no-store')
+        ->header('Referrer-Policy', 'no-referrer');
+})->name('order.whatsapp');
+
 Route::get('/portfolio', function () {
     return view('pages.portfolio');
 })->name('portfolio');

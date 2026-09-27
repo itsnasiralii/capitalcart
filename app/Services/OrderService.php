@@ -27,7 +27,7 @@ class OrderService
             $this->ensureSingleWhatsAppDestination();
         }
 
-        return DB::transaction(function () use ($billing, $shipping, $paymentMethod, $notes, $stripePaymentIntentId) {
+        $order = DB::transaction(function () use ($billing, $shipping, $paymentMethod, $notes, $stripePaymentIntentId) {
             $subtotal    = $this->cart->getSubtotal();
             $discount    = $this->cart->getDiscount();
             $shippingAmt = $this->cart->getShipping();
@@ -114,6 +114,26 @@ class OrderService
 
             return $order;
         });
+
+        // Only this browser session may open the full contact details sent to WhatsApp.
+        session()->put('whatsapp_order_access.' . $order->id, now()->addHours(24)->timestamp);
+
+        return $order;
+    }
+
+    public function canOpenWhatsApp(Order $order): bool
+    {
+        if (in_array($order->status, ['expired', 'cancelled'], true)
+            || ($order->expires_at && $order->expires_at->isPast())) {
+            return false;
+        }
+
+        $user = auth()->user();
+        if ($user && ($user->is_admin || ($order->user_id && $user->id === $order->user_id))) {
+            return true;
+        }
+
+        return (int) session('whatsapp_order_access.' . $order->id, 0) > now()->timestamp;
     }
 
     public function generateWhatsAppMessage(Order $order): string
