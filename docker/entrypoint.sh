@@ -68,7 +68,7 @@ php artisan storage:link --force || true
 
 # Run database migrations unconditionally
 echo "Running database migrations..."
-php artisan migrate --force
+php artisan migrate --force || true
 
 # Seed database only if it is empty (prevents duplicate data on restarts)
 echo "Checking if database needs seeding..."

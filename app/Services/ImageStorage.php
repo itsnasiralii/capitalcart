@@ -66,27 +66,51 @@ class ImageStorage
             imagecopyresampled($canvas, $source, 0, 0, 0, 0, $width, $height, imagesx($source), imagesy($source));
 
             $bytes = '';
-            foreach ([82, 65, 45] as $quality) {
+            $outputMime = 'image/webp';
+
+            // Try WebP first (smaller files), fall back to JPEG if WebP fails or returns nothing
+            if (function_exists('imagewebp')) {
+                foreach ([82, 65, 45] as $quality) {
+                    ob_start();
+                    try {
+                        $encoded = imagewebp($canvas, null, $quality);
+                        $bytes = (string) ob_get_contents();
+                    } finally {
+                        ob_end_clean();
+                    }
+                    if ($encoded && strlen($bytes) > 0) {
+                        $outputMime = 'image/webp';
+                        if (strlen($bytes) <= 1_048_576) {
+                            break;
+                        }
+                    } else {
+                        $bytes = '';
+                        break;
+                    }
+                }
+            }
+
+            // Fall back to JPEG if WebP gave nothing
+            if ($bytes === '') {
                 ob_start();
                 try {
-                    $encoded = imagewebp($canvas, null, $quality);
-                    $bytes = ob_get_contents();
+                    $encoded = imagejpeg($canvas, null, 82);
+                    $bytes = (string) ob_get_contents();
                 } finally {
                     ob_end_clean();
                 }
-                if (!$encoded || !$bytes) {
-                    throw new \RuntimeException('Image encoding failed.');
-                }
-                if (strlen($bytes) <= 1_048_576) {
-                    break;
+                $outputMime = 'image/jpeg';
+                if (!$encoded || $bytes === '') {
+                    throw new \RuntimeException('Image encoding failed (both WebP and JPEG).');
                 }
             }
+
             if (strlen($bytes) > 1_048_576) {
                 throw ValidationException::withMessages([$field => 'This image is too detailed. Please resize it and try again.']);
             }
 
             $asset = MediaAsset::firstOrCreate(['sha256' => hash('sha256', $bytes)], [
-                'mime_type' => 'image/webp',
+                'mime_type' => $outputMime,
                 'byte_size' => strlen($bytes),
                 'width' => $width,
                 'height' => $height,
