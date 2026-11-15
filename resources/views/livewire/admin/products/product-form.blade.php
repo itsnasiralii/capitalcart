@@ -35,7 +35,7 @@
                 </div>
 
                 @foreach($images as $idx => $img)
-                    <div class="border rounded-3 p-3 mb-3" wire:key="product-image-{{ $idx }}">
+                    <div class="border rounded-3 p-3 mb-3" wire:key="product-image-{{ $idx }}-{{ $img['key'] ?? $img['id'] ?? 'initial' }}">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <div>
                                 @if($idx === 0)
@@ -54,34 +54,48 @@
                             @endif
                         </div>
 
-                        <label class="form-label small fw-semibold mb-1">
+                        <label for="product-photo-{{ $idx }}" class="form-label small fw-semibold mb-1">
                             {{ !empty($img['id']) ? 'Replace image from computer' : 'Choose image from computer' }}
                         </label>
 
-                        <input type="file"
-                               class="form-control js-product-image-upload"
-                               accept="image/jpeg,image/png,image/webp,image/gif"
-                               data-index="{{ $idx }}"
-                               data-existing-image-id="{{ $img['id'] ?? '' }}"
-                               data-upload-url="{{ $productId ? route('admin.products.images.upload', $productId) : '' }}"
-                               {{ $productId ? '' : 'disabled' }}>
+                        @if($productId)
+                            <input type="file" id="product-photo-{{ $idx }}"
+                                   class="form-control js-product-image-upload"
+                                   accept="image/jpeg,image/png,image/webp,image/gif"
+                                   data-index="{{ $idx }}"
+                                   data-existing-image-id="{{ $img['id'] ?? '' }}"
+                                   data-upload-url="{{ route('admin.products.images.upload', $productId) }}">
 
-                        <div class="small mt-2 js-product-upload-status text-muted" data-index="{{ $idx }}">
-                            @if($productId)
+                            <div class="small mt-2 js-product-upload-status text-muted" data-index="{{ $idx }}">
                                 Select an image to upload directly to the database.
-                            @else
-                                Create the product first, then add images.
-                            @endif
-                        </div>
+                            </div>
 
-                        <div class="mt-2">
-                            <small class="text-muted d-block mb-1">Current image:</small>
-                            <img
-                                class="js-product-image-preview {{ empty($img['url']) ? 'd-none' : '' }}"
-                                src="{{ $img['url'] ?? '' }}"
-                                style="height:110px;width:110px;object-fit:cover;border-radius:0.5rem;border:1px solid #dee2e6"
-                                onerror="this.style.display='none'">
-                        </div>
+                            <div class="mt-2">
+                                <small class="text-muted d-block mb-1">Current image:</small>
+                                <img
+                                    class="js-product-image-preview {{ empty($img['url']) ? 'd-none' : '' }}"
+                                    src="{{ $img['url'] ?? '' }}"
+                                    style="height:110px;width:110px;object-fit:cover;border-radius:0.5rem;border:1px solid #dee2e6"
+                                    onerror="this.style.display='none'">
+                            </div>
+                        @else
+                            <div x-data="{ uploading: false, failed: false }"
+                                 x-on:livewire-upload-start="uploading = true; failed = false; uploads++"
+                                 x-on:livewire-upload-finish="uploading = false; uploads--"
+                                 x-on:livewire-upload-error="uploading = false; failed = true; uploads--"
+                                 x-on:livewire-upload-cancel="uploading = false; uploads--">
+                                <input type="file" id="product-photo-{{ $idx }}" class="form-control"
+                                       accept="image/jpeg,image/png,image/webp,image/gif"
+                                       wire:model="imageUploads.{{ $idx }}" :disabled="uploading">
+                                <small x-show="uploading" x-cloak role="status">Uploading photo…</small>
+                                <div x-show="failed" x-cloak role="alert" class="text-danger small">Upload failed. Please select the photo again.</div>
+                                @error("imageUploads.$idx") <div role="alert" class="text-danger small">{{ $message }}</div> @enderror
+                                @if(($imageUploads[$idx] ?? null) instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile && $imageUploads[$idx]->isPreviewable())
+                                    <img src="{{ $imageUploads[$idx]->temporaryUrl() }}" alt="Selected product photo"
+                                         class="rounded border mt-2" style="height:110px;width:110px;object-fit:cover">
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 @endforeach
 

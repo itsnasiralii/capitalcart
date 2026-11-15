@@ -114,7 +114,7 @@ class ProductForm extends Component
 
     public function addImage(): void
     {
-        $this->images[] = ['id' => null, 'url' => '', 'is_primary' => false];
+        $this->images[] = ['id' => null, 'url' => '', 'is_primary' => false, 'key' => (string) \Illuminate\Support\Str::uuid()];
     }
 
     public function removeImage(int $index): void

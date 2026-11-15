@@ -83,11 +83,12 @@ class CatalogImageUploadsTest extends TestCase
         $this->admin();
         $category = $this->category();
         Livewire::test(ProductForm::class)
+            ->assertSeeHtml('wire:model="imageUploads.0"')
             ->set('name', 'Herbal Cream')->set('category_id', $category->id)
             ->set('base_price', '500')->set('stock_quantity', 6)
-            ->set('images', [['url' => '', 'is_primary' => true]])
             ->set('imageUploads.0', UploadedFile::fake()->image('front.png', 100, 100))
             ->call('addImage')
+            ->assertSeeHtml('wire:model="imageUploads.1"')
             ->set('imageUploads.1', UploadedFile::fake()->image('back.jpg', 120, 100))
             ->call('save')->assertHasNoErrors()->assertRedirect(route('admin.products.index'));
 
