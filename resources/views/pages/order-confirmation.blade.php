@@ -7,7 +7,7 @@
                 <svg width="38" height="38" fill="none" stroke="#16a34a" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
             </div>
 
-            <h2 class="font-poppins fw-bold text-success mb-2">Order Placed Successfully!</h2>
+            <h1 class="font-poppins fw-bold text-success mb-2 h2">Order Placed Successfully!</h1>
             <p class="text-muted fs-6 mb-4">Shukriya! Your order has been placed and received. Our team will verify and dispatch it shortly.</p>
 
             {{-- Order Number Box --}}

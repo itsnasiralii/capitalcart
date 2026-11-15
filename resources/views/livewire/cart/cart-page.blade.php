@@ -1,5 +1,5 @@
 <div class="py-4">
-    <h2 class="font-poppins fw-bold mb-4">Shopping Cart</h2>
+    <h1 class="font-poppins fw-bold mb-4 h2">Shopping Cart</h1>
 
     @if(empty($items))
         <div class="text-center py-5">

@@ -4,7 +4,7 @@
         <div class="row justify-content-center">
             <div class="col-md-5">
                 <div class="text-center mb-4">
-                    <h2 class="font-poppins fw-bold">Create Account</h2>
+                    <h1 class="font-poppins fw-bold h2">Create Account</h1>
                     <p class="text-muted">Join CapitalCart and start shopping</p>
                 </div>
                 <div class="bg-white border rounded-3 p-4 shadow-sm">
