@@ -161,6 +161,8 @@
                 <a href="{{ route('register') }}">Register</a>
                 <a href="{{ route('cart') }}">Your Cart</a>
                 <a href="{{ route('wishlist') }}">Wishlist</a>
+                <a href="{{ route('privacy') }}">Privacy &amp; account settings</a>
+                <a href="{{ route('ordering') }}">Ordering &amp; payments</a>
                 <a href="{{ route('portfolio') }}" class="fw-semibold" style="color:#F97316">★ About Developer</a>
             </div>
             <div class="col-lg-4">

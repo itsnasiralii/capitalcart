@@ -212,7 +212,7 @@
         <div class="tab-content">
             <div class="tab-pane fade show active" id="desc">
                 @if($product->description)
-                    <div class="prose" style="color:#374151;line-height:1.7">{!! $product->description !!}</div>
+                    <div class="prose" style="color:#374151;line-height:1.7">{!! app(\Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface::class)->sanitize($product->description ?? '') !!}</div>
                 @else
                     <p class="text-muted">No description available.</p>
                 @endif

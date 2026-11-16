@@ -99,6 +99,9 @@ class PortfolioManager extends Component
             'title'     => 'required|string|max:150',
             'intro'     => 'required|string|max:2000',
             'email'     => 'nullable|email|max:150',
+            'linkedin' => 'nullable|url:http,https|max:2048',
+            'github' => 'nullable|url:http,https|max:2048',
+            'instagram' => 'nullable|url:http,https|max:2048',
             'newAvatar' => 'nullable|image|max:5120', // 5MB max
             'newCv'     => 'nullable|mimes:pdf,doc,docx|max:10240', // 10MB max
         ]);
@@ -176,6 +179,8 @@ class PortfolioManager extends Component
     public function saveProject(): void
     {
         $this->validate([
+            'projDemoUrl' => 'nullable|url:http,https|max:2048',
+            'projGithubUrl' => 'nullable|url:http,https|max:2048',
             'projTitle'       => 'required|string|max:150',
             'projCategory'    => 'required|string|max:100',
             'projDescription' => 'required|string|max:3000',

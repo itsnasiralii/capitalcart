@@ -113,7 +113,7 @@
                             <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" class="text-muted"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                         </label>
 
-                        {{-- Stripe --}}
+                        @if(\App\Services\StripeCheckout::enabled())
                         <label class="d-flex align-items-center gap-3 p-3 border rounded-3 transition-all {{ $payment_method === 'stripe' ? 'border-primary bg-light shadow-sm' : 'bg-white' }}" style="cursor:pointer">
                             <input type="radio" wire:model.live="payment_method" value="stripe" class="form-check-input mt-0">
                             <div class="flex-grow-1">
@@ -131,14 +131,13 @@
                                 <label class="form-label fw-600 mb-2">Card Details</label>
                                 <div id="stripe-payment-element" style="min-height:44px"></div>
                                 <div id="stripe-payment-errors" class="text-danger small mt-2" role="alert"></div>
-                                <div class="mt-2 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0">
-                                    <small class="text-success fw-600">🧪 Test Card: <code>4242 4242 4242 4242</code> · Any future date · Any CVC</small>
-                                </div>
+
                             </div>
                             <div id="stripe-processing" class="text-center py-2 d-none">
                                 <div class="spinner-border text-primary spinner-border-sm me-2"></div>
                                 <span class="text-muted">Verifying card payment…</span>
                             </div>
+                        @endif
                         @endif
                     </div>
                 </div>
@@ -173,7 +172,7 @@
                             Creating your order securely…
                         </span>
                     </button>
-                    <p class="text-center text-muted small mt-2 mb-0">By clicking above, you agree to our terms of service and order policies.</p>
+                    <p class="text-center text-muted small mt-2 mb-0">Review our <a href="{{ route('ordering') }}">ordering and payment terms</a> and <a href="{{ route('privacy') }}">privacy information</a>.</p>
                 </div>
             </div>
         </div>
@@ -249,6 +248,7 @@
     </div>
 </div>
 
+@if(\App\Services\StripeCheckout::enabled())
 @push('scripts')
 <script src="https://js.stripe.com/v3/"></script>
 <script>
@@ -380,3 +380,4 @@
 })();
 </script>
 @endpush
+@endif

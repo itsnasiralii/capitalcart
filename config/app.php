@@ -26,6 +26,7 @@ return [
     |
     */
 
+    'trusted_proxies' => array_values(array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', ''))))),
     'env' => env('APP_ENV', 'production'),
 
     /*
@@ -39,7 +40,7 @@ return [
     |
     */
 
-    'debug' => (bool) env('APP_DEBUG', true),
+    'debug' => env('APP_ENV', 'production') !== 'production' && (bool) env('APP_DEBUG', false),
 
     /*
     |--------------------------------------------------------------------------

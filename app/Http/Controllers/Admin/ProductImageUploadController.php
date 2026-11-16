@@ -30,6 +30,10 @@ class ProductImageUploadController extends Controller
 
         try {
             $image = DB::transaction(function () use ($request, $product, $existing, $index) {
+                $product = Product::lockForUpdate()->findOrFail($product->id);
+                if (!$existing && $product->images()->count() >= 51) {
+                    throw ValidationException::withMessages(['image' => 'A product can have up to 51 photos.']);
+                }
                 $url = app(ImageStorage::class)->store($request->file('image'), 'image', 20480);
                 $image = $existing ?? new ProductImage(['product_id' => $product->id]);
                 $image->fill([
@@ -60,7 +64,7 @@ class ProductImageUploadController extends Controller
             $requestId = (string) Str::uuid();
             \Illuminate\Support\Facades\Log::error('Catalog image upload failed', [
                 'request_id' => $requestId,
-                'exception' => $exception,
+                'exception_type' => class_basename($exception),
             ]);
 
             // Useful in DevTools without returning SQL bindings, image bytes or credentials.
@@ -68,14 +72,6 @@ class ProductImageUploadController extends Controller
                 'message' => 'Image could not be saved. The previous photo is unchanged. Please retry.',
                 'error_code' => 'SERVER_UPLOAD_FAILED',
                 'request_id' => $requestId,
-                'exception_type' => class_basename($exception),
-                'debug' => [
-                    'gd_loaded' => extension_loaded('gd'),
-                    'webp_supported' => function_exists('imagewebp'),
-                    'db_driver' => config('database.default'),
-                    'file_size_bytes' => $request->file('image')?->getSize(),
-                    'php_upload_max_filesize' => ini_get('upload_max_filesize'),
-                ],
             ], 500);
         }
     }

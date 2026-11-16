@@ -11,8 +11,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->trustProxies(at: '*');
-        $middleware->append(\App\Http\Middleware\DebugLivewireUpload::class);
+        $middleware->validateCsrfTokens(except: ['payments/stripe/webhook']);
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+        $middleware->authenticateSessions();
         $middleware->web(append: [
             \App\Http\Middleware\TrackActiveVisitors::class,
         ]);
@@ -21,5 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->report(function (\Illuminate\Database\QueryException $exception) {
+            \Illuminate\Support\Facades\Log::error('Database operation failed', [
+                'sqlstate' => $exception->errorInfo[0] ?? null,
+                'route' => request()->route()?->getName(),
+            ]);
+        })->stop();
     })->create();

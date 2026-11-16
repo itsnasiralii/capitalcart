@@ -34,6 +34,14 @@
                     <button wire:click="addImage" type="button" class="btn btn-sm btn-outline-primary" :disabled="uploads > 0">+ Add Image</button>
                 </div>
 
+                <div class="mb-3" x-data="{ message: '' }">
+                    <label for="catalog-photo-batch" class="form-label">Select multiple photos</label>
+                    <input id="catalog-photo-batch" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif"
+                           class="form-control" :disabled="uploads > 0 || syncFailed"
+                           @change="await window.uploadCatalogPhotos($event.target, $wire, text => message = text)">
+                    <small class="text-muted" role="status" x-text="message"></small>
+                </div>
+
                 @foreach($images as $idx => $img)
                     <div class="border rounded-3 p-3 mb-3" wire:key="product-image-{{ $idx }}-{{ $img['key'] ?? $img['id'] ?? 'initial' }}">
                         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -58,9 +66,9 @@
                             {{ !empty($img['id']) ? 'Replace image from computer' : 'Choose image from computer' }}
                         </label>
 
-                        @if($productId)
+                        @if($productId && empty($imageUploads[$idx]))
                             <input type="file" id="product-photo-{{ $idx }}"
-                                   class="form-control js-product-image-upload"
+                                   class="form-control js-product-image-upload" :disabled="uploads > 0 || syncFailed"
                                    accept="image/jpeg,image/png,image/webp,image/gif"
                                    data-index="{{ $idx }}"
                                    data-existing-image-id="{{ $img['id'] ?? '' }}"
@@ -86,7 +94,7 @@
                                  x-on:livewire-upload-cancel="uploading = false; uploads--">
                                 <input type="file" id="product-photo-{{ $idx }}" class="form-control"
                                        accept="image/jpeg,image/png,image/webp,image/gif"
-                                       wire:model="imageUploads.{{ $idx }}" :disabled="uploading">
+                                       wire:model="imageUploads.{{ $idx }}" :disabled="uploading || uploads > 0 || syncFailed">
                                 <small x-show="uploading" x-cloak role="status">Uploading photo…</small>
                                 <div x-show="failed" x-cloak role="alert" class="text-danger small">Upload failed. Please select the photo again.</div>
                                 @error("imageUploads.$idx") <div role="alert" class="text-danger small">{{ $message }}</div> @enderror
@@ -243,7 +251,36 @@
             if (window.__capitalCartDirectImageUpload) return;
             window.__capitalCartDirectImageUpload = true;
 
-            const PREFIX = '[CapitalCart Direct Upload]';
+            window.uploadCatalogPhotos = async (input, component, showStatus) => {
+                const files = Array.from(input.files);
+                input.value = '';
+                if (!files.length) return;
+                window.dispatchEvent(new Event('catalog-upload-start'));
+                let saved = 0;
+                try {
+                    if (files.some(file => file.size > 20 * 1024 * 1024)) {
+                        showStatus('Each photo must be 20 MB or smaller.');
+                        return;
+                    }
+                    const slots = await component.reservePhotoSlots(files.length);
+                    if (slots.length !== files.length) {
+                        showStatus('A product can have up to 51 photos.');
+                        return;
+                    }
+                    for (const [i, file] of files.entries()) {
+                        showStatus('Uploading photo ' + (i + 1) + ' of ' + files.length + '…');
+                        await new Promise((resolve, reject) =>
+                            component.$upload('imageUploads.' + slots[i], file, resolve, reject, () => {}, reject)
+                        );
+                        saved++;
+                    }
+                    showStatus(saved + ' photos ready. Save the product to keep them.');
+                } catch {
+                    showStatus(saved + ' photos ready. Select the remaining photos again.');
+                } finally {
+                    window.dispatchEvent(new Event('catalog-upload-finish'));
+                }
+            };
 
             const getCsrf = () =>
                 document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
@@ -273,37 +310,22 @@
                 const index = Number(input.dataset.index || 0);
                 const existingImageId = input.dataset.existingImageId || '';
 
-                console.group(PREFIX + ' START');
-                console.info('file', {
-                    name: file.name,
-                    size_bytes: file.size,
-                    size_mb: Number((file.size / 1024 / 1024).toFixed(2)),
-                    type: file.type,
-                    index,
-                    existing_image_id: existingImageId || null,
-                    upload_url: uploadUrl
-                });
-
                 if (!uploadUrl) {
                     const message = 'Upload URL is missing. Save the product first.';
-                    console.error(PREFIX, message);
                     if (status) {
                         status.className = 'small mt-2 js-product-upload-status text-danger';
                         status.textContent = message;
                     }
-                    console.groupEnd();
                     return;
                 }
 
                 if (file.size > 20 * 1024 * 1024) {
                     const message = 'File is larger than 20MB.';
-                    console.error(PREFIX, message);
                     if (status) {
                         status.className = 'small mt-2 js-product-upload-status text-danger';
                         status.textContent = message;
                     }
                     input.value = '';
-                    console.groupEnd();
                     return;
                 }
 
@@ -348,15 +370,8 @@
                     try {
                         data = raw ? JSON.parse(raw) : {};
                     } catch (parseError) {
-                        data = { raw_response: raw };
+                        data = {};
                     }
-
-                    console.info(PREFIX, 'HTTP RESPONSE', {
-                        status: response.status,
-                        statusText: response.statusText,
-                        ok: response.ok,
-                        data
-                    });
 
                     if (!response.ok) {
                         const validationErrors = data?.errors
@@ -391,26 +406,14 @@
                         );
                     } else {
                         window.dispatchEvent(new Event('catalog-upload-sync-failed'));
-                        console.warn(PREFIX, 'Livewire state sync skipped', {
-                            component_found: Boolean(component),
-                            image_id: data.image_id,
-                            image_url: data.image_url
-                        });
                     }
 
                     if (status) {
                         status.className = 'small mt-2 js-product-upload-status text-success';
                         status.textContent = '✓ Image uploaded successfully to database.';
                     }
-
-                    console.info(PREFIX, 'SUCCESS', data);
                 } catch (error) {
                     if (imageSaved) window.dispatchEvent(new Event('catalog-upload-sync-failed'));
-                    console.error(PREFIX, 'FAILED', {
-                        name: error?.name,
-                        message: error?.message,
-                        stack: error?.stack
-                    });
 
                     if (status) {
                         status.className = 'small mt-2 js-product-upload-status text-danger';
@@ -420,258 +423,8 @@
                     input.disabled = false;
                     window.dispatchEvent(new Event('catalog-upload-finish'));
                     URL.revokeObjectURL(localPreview);
-                    console.groupEnd();
                 }
             }, true);
-
-            console.info(PREFIX, 'Direct database uploader enabled. Livewire temporary file upload is bypassed.');
-        })();
-    </script>
-
-    <script>
-        (() => {
-            if (window.__capitalCartUploadConsoleDebug) return;
-            window.__capitalCartUploadConsoleDebug = true;
-
-            const PREFIX = '[CapitalCart Upload Debug]';
-
-            const cleanUrl = (value) => {
-                try {
-                    const url = new URL(value, window.location.origin);
-                    return url.origin + url.pathname;
-                } catch (e) {
-                    return String(value || '').split('?')[0];
-                }
-            };
-
-            const isLivewireRequest = (value) => {
-                const url = cleanUrl(value);
-                return url.includes('/livewire');
-            };
-
-            console.info(PREFIX, 'Browser upload diagnostics ENABLED', {
-                page: window.location.href,
-                time: new Date().toISOString()
-            });
-
-            // Show the exact file selected in DevTools Console.
-            document.addEventListener('change', (event) => {
-                const input = event.target;
-
-                if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
-
-                const model = input.getAttribute('wire:model') || '';
-                if (!model.startsWith('imageUploads.')) return;
-
-                const files = Array.from(input.files || []).map((file) => ({
-                    name: file.name,
-                    size_bytes: file.size,
-                    size_mb: Number((file.size / 1024 / 1024).toFixed(2)),
-                    mime: file.type || '(browser did not report MIME)',
-                    last_modified: new Date(file.lastModified).toISOString()
-                }));
-
-                console.group(PREFIX + ' FILE SELECTED');
-                console.info('wire:model:', model);
-                console.table(files);
-                console.info('input validity:', {
-                    valid: input.validity.valid,
-                    validationMessage: input.validationMessage
-                });
-                console.groupEnd();
-            }, true);
-
-            // Livewire emits these browser events directly on file inputs.
-            [
-                'livewire-upload-start',
-                'livewire-upload-progress',
-                'livewire-upload-finish',
-                'livewire-upload-error',
-                'livewire-upload-cancel'
-            ].forEach((eventName) => {
-                document.addEventListener(eventName, (event) => {
-                    const payload = {
-                        event: eventName,
-                        detail: event.detail || {},
-                        model: event.target?.getAttribute?.('wire:model') || null,
-                        time: new Date().toISOString()
-                    };
-
-                    if (eventName === 'livewire-upload-error') {
-                        console.error(PREFIX, 'LIVEWIRE UPLOAD ERROR', payload);
-                    } else if (eventName === 'livewire-upload-cancel') {
-                        console.warn(PREFIX, 'LIVEWIRE UPLOAD CANCELLED', payload);
-                    } else {
-                        console.info(PREFIX, eventName, payload);
-                    }
-                }, true);
-            });
-
-            // Capture Livewire XHR requests, if the current Livewire build uses XHR.
-            const XHR = window.XMLHttpRequest;
-            if (XHR && !XHR.prototype.__capitalCartUploadPatched) {
-                const nativeOpen = XHR.prototype.open;
-                const nativeSend = XHR.prototype.send;
-
-                XHR.prototype.open = function(method, url, ...rest) {
-                    this.__ccMethod = method;
-                    this.__ccUrl = url;
-                    return nativeOpen.call(this, method, url, ...rest);
-                };
-
-                XHR.prototype.send = function(body) {
-                    if (isLivewireRequest(this.__ccUrl)) {
-                        const requestInfo = {
-                            transport: 'XHR',
-                            method: this.__ccMethod,
-                            url: cleanUrl(this.__ccUrl),
-                            body_type: body?.constructor?.name || typeof body,
-                            time: new Date().toISOString()
-                        };
-
-                        console.info(PREFIX, 'REQUEST START', requestInfo);
-
-                        this.addEventListener('loadend', () => {
-                            const result = {
-                                ...requestInfo,
-                                status: this.status,
-                                status_text: this.statusText,
-                                response_url: cleanUrl(this.responseURL || this.__ccUrl)
-                            };
-
-                            if (this.status >= 400 || this.status === 0) {
-                                let preview = '';
-                                try {
-                                    preview = typeof this.responseText === 'string'
-                                        ? this.responseText.slice(0, 4000)
-                                        : '[responseText unavailable]';
-                                } catch (e) {
-                                    preview = '[responseText blocked: ' + e.message + ']';
-                                }
-
-                                console.error(PREFIX, 'REQUEST FAILED', result);
-                                console.error(PREFIX, 'SERVER RESPONSE PREVIEW:', preview);
-                            } else {
-                                console.info(PREFIX, 'REQUEST OK', result);
-                            }
-                        });
-
-                        this.addEventListener('error', (event) => {
-                            console.error(PREFIX, 'XHR NETWORK ERROR', {
-                                ...requestInfo,
-                                status: this.status,
-                                event
-                            });
-                        });
-
-                        this.addEventListener('timeout', () => {
-                            console.error(PREFIX, 'XHR TIMEOUT', requestInfo);
-                        });
-
-                        this.addEventListener('abort', () => {
-                            console.warn(PREFIX, 'XHR ABORTED', requestInfo);
-                        });
-                    }
-
-                    return nativeSend.call(this, body);
-                };
-
-                XHR.prototype.__capitalCartUploadPatched = true;
-            }
-
-            // Capture Livewire fetch requests (used by newer Livewire versions).
-            if (window.fetch && !window.fetch.__capitalCartUploadPatched) {
-                const nativeFetch = window.fetch.bind(window);
-
-                const debugFetch = async (...args) => {
-                    const input = args[0];
-                    const options = args[1] || {};
-                    const rawUrl = typeof input === 'string' ? input : input?.url;
-                    const method = options.method || input?.method || 'GET';
-
-                    if (!isLivewireRequest(rawUrl)) {
-                        return nativeFetch(...args);
-                    }
-
-                    const requestInfo = {
-                        transport: 'fetch',
-                        method,
-                        url: cleanUrl(rawUrl),
-                        body_type: options.body?.constructor?.name || input?.body?.constructor?.name || null,
-                        time: new Date().toISOString()
-                    };
-
-                    console.info(PREFIX, 'REQUEST START', requestInfo);
-
-                    try {
-                        const response = await nativeFetch(...args);
-
-                        const result = {
-                            ...requestInfo,
-                            status: response.status,
-                            status_text: response.statusText,
-                            response_url: cleanUrl(response.url || rawUrl),
-                            redirected: response.redirected
-                        };
-
-                        if (!response.ok) {
-                            let preview = '';
-                            try {
-                                preview = (await response.clone().text()).slice(0, 4000);
-                            } catch (e) {
-                                preview = '[response body unavailable: ' + e.message + ']';
-                            }
-
-                            console.error(PREFIX, 'REQUEST FAILED', result);
-                            console.error(PREFIX, 'SERVER RESPONSE PREVIEW:', preview);
-                        } else {
-                            console.info(PREFIX, 'REQUEST OK', result);
-                        }
-
-                        return response;
-                    } catch (error) {
-                        console.error(PREFIX, 'FETCH NETWORK/JS ERROR', {
-                            ...requestInfo,
-                            name: error?.name,
-                            message: error?.message,
-                            stack: error?.stack
-                        });
-                        throw error;
-                    }
-                };
-
-                debugFetch.__capitalCartUploadPatched = true;
-                window.fetch = debugFetch;
-            }
-
-            // Catch any browser-side JavaScript error that happens during upload.
-            window.addEventListener('error', (event) => {
-                const message = String(event.message || '');
-                const filename = String(event.filename || '');
-
-                if (
-                    message.toLowerCase().includes('upload') ||
-                    message.toLowerCase().includes('livewire') ||
-                    filename.toLowerCase().includes('livewire')
-                ) {
-                    console.error(PREFIX, 'GLOBAL JS ERROR', {
-                        message: event.message,
-                        filename: event.filename,
-                        line: event.lineno,
-                        column: event.colno,
-                        error: event.error
-                    });
-                }
-            });
-
-            window.addEventListener('unhandledrejection', (event) => {
-                const reason = event.reason;
-                const text = String(reason?.message || reason || '');
-
-                if (text.toLowerCase().includes('upload') || text.toLowerCase().includes('livewire')) {
-                    console.error(PREFIX, 'UNHANDLED PROMISE REJECTION', reason);
-                }
-            });
         })();
     </script>
 

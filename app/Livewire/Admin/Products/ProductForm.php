@@ -13,7 +13,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\Attributes\Computed;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ProductForm extends Component
 {
@@ -41,6 +41,9 @@ class ProductForm extends Component
     public array $images = [['id' => null, 'url' => '', 'is_primary' => true]];
     public array $imageUploads = [];
 
+    #[Locked]
+    public array $loadedImageIds = [];
+
     // Variants
     public array $variants = [];
 
@@ -63,6 +66,7 @@ class ProductForm extends Component
             $this->is_active         = $product->is_active;
             $this->is_variable       = $product->is_variable;
 
+            $this->loadedImageIds = $product->images->modelKeys();
             $this->images = $product->images->map(fn($img) => [
                 'id'         => $img->id,
                 'url'        => $img->image_url,
@@ -96,25 +100,32 @@ class ProductForm extends Component
         return AttributeType::with('attributes')->get();
     }
 
-    public function updatedImageUploads($value, $key): void
-    {
-        Log::info('[UPLOAD-DEBUG][COMPONENT]', [
-            'product_id' => $this->productId,
-            'array_key' => $key,
-            'received' => $value !== null,
-            'class' => is_object($value) ? get_class($value) : gettype($value),
-            'original_name' => is_object($value) && method_exists($value, 'getClientOriginalName')
-                ? $value->getClientOriginalName()
-                : null,
-            'size' => is_object($value) && method_exists($value, 'getSize')
-                ? $value->getSize()
-                : null,
-        ]);
-    }
-
     public function addImage(): void
     {
-        $this->images[] = ['id' => null, 'url' => '', 'is_primary' => false, 'key' => (string) \Illuminate\Support\Str::uuid()];
+        if (count($this->images) < 51) {
+            $this->images[] = ['id' => null, 'url' => '', 'is_primary' => false, 'key' => (string) Str::uuid()];
+        }
+    }
+
+    public function reservePhotoSlots(int $count): array
+    {
+        $slots = [];
+        foreach ($this->images as $index => $image) {
+            if (empty($image['id']) && empty($this->imageUploads[$index])) {
+                $slots[] = $index;
+            }
+        }
+
+        if ($count < 1 || $count > 51 - count($this->images) + count($slots)) {
+            return [];
+        }
+
+        while (count($slots) < $count) {
+            $this->addImage();
+            $slots[] = array_key_last($this->images);
+        }
+
+        return array_slice($slots, 0, $count);
     }
 
     public function removeImage(int $index): void
@@ -159,6 +170,9 @@ class ProductForm extends Component
             ];
         }
 
+        if (!in_array($image->id, $this->loadedImageIds, true)) {
+            $this->loadedImageIds[] = $image->id;
+        }
         $this->images[$index]['id'] = $image->id;
         $this->images[$index]['url'] = $image->image_url;
         $this->images[$index]['is_primary'] = $index === 0;
@@ -189,6 +203,7 @@ class ProductForm extends Component
             'sale_price' => 'nullable|numeric|min:0',
             'stock_quantity' => 'required|integer|min:0',
             'images' => 'array|max:51',
+            'imageUploads' => 'array|max:51',
             'imageUploads.*' => array_merge(['nullable'], array_slice(ImageStorage::rules(20480), 1)),
             'variants.*.stock_quantity' => 'required|integer|min:0',
             'variants.*.price_modifier' => 'required|numeric',
@@ -197,7 +212,11 @@ class ProductForm extends Component
 
         try {
             DB::transaction(function () {
-                $product = $this->productId ? Product::findOrFail($this->productId) : new Product;
+                $product = $this->productId ? Product::lockForUpdate()->findOrFail($this->productId) : new Product;
+                if ($product->exists && collect($this->loadedImageIds)->sort()->values()->all()
+                    !== $product->images()->reorder('id')->pluck('id')->all()) {
+                    throw ValidationException::withMessages(['save' => 'The gallery changed in another window. Reload the product before saving.']);
+                }
                 $product->fill([
                     'category_id' => $this->category_id,
                     'name' => $this->name,

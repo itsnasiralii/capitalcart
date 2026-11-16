@@ -96,6 +96,7 @@
                 <h6 class="font-poppins fw-bold mb-3">Update Order</h6>
                 <div class="mb-3">
                     <label class="form-label">Status</label>
+                    @error('newStatus') <p class="text-danger" role="alert">{{ $message }}</p> @enderror
                     <select wire:model="newStatus" class="form-select">
                         @foreach(\App\Models\Order::STATUSES as $s)
                             <option value="{{ $s }}">{{ ucwords(str_replace('_', ' ', $s)) }}</option>
@@ -112,6 +113,9 @@
             {{-- Payment --}}
             <div class="bg-white rounded-3 border p-4 mb-3">
                 <h6 class="font-poppins fw-bold mb-3">Payment Info</h6>
+                @if($order->refunded_amount > 0)
+                    <p>Refunded amount: Rs. {{ number_format($order->refunded_amount, 2) }}</p>
+                @endif
                 <div class="small">
                     <div class="d-flex justify-content-between mb-1">
                         <span class="text-muted">Method</span>

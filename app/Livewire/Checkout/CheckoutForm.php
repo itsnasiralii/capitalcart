@@ -6,8 +6,8 @@ use App\Helpers\PhoneHelper;
 use App\Services\CartService;
 use App\Services\OrderService;
 use Livewire\Component;
-use Stripe\Stripe;
-use Stripe\PaymentIntent;
+use App\Services\StripeCheckout;
+use Illuminate\Support\Facades\RateLimiter;
 
 class CheckoutForm extends Component
 {
@@ -21,7 +21,6 @@ class CheckoutForm extends Component
 
     // Payment Method (Default: WhatsApp)
     public string $payment_method  = 'whatsapp';
-    public string $stripeClientSecret = '';
 
     // Submission guard
     public bool $isSubmitting = false;
@@ -112,20 +111,11 @@ class CheckoutForm extends Component
             return;
         }
 
+        if (!$this->limitCheckout()) return;
         $this->isSubmitting = true;
 
         try {
-            $billing = [
-                'name'    => $this->billing_name,
-                'phone'   => $this->billing_phone,
-                'email'   => $this->billing_email ?: null,
-                'address' => $this->billing_address ?: 'Direct Order',
-                'city'    => $this->billing_city ?: 'Islamabad',
-                'state'   => 'Federal',
-                'zip'     => '44000',
-                'country' => 'PK',
-            ];
-
+            $billing = $this->billing();
             $shipping = $billing;
 
             $order = $orderService->createOrder(
@@ -137,68 +127,74 @@ class CheckoutForm extends Component
 
             $this->dispatch('cart-updated');
             return redirect()->route('order.confirmation', $order->order_number);
-        } catch (\Exception $e) {
+        } catch (\DomainException $e) {
             $this->isSubmitting = false;
             $this->addError('order_error', $e->getMessage());
+        } catch (\Throwable $e) {
+            report($e);
+            $this->isSubmitting = false;
+            $this->addError('order_error', 'Your order could not be placed. Please try again.');
         }
     }
 
-    /** Called from JS to get client_secret for Stripe.js */
-    public function createPaymentIntent(CartService $cart): void
+    private function billing(): array
     {
-        Stripe::setApiKey(config('services.stripe.secret'));
-
-        $amountInCents = (int) round($cart->getTotal() * 100);
-
-        try {
-            $intent = PaymentIntent::create([
-                'amount'   => $amountInCents,
-                'currency' => 'usd',
-                'metadata' => [
-                    'customer_phone' => $this->billing_phone,
-                    'customer_name'  => $this->billing_name,
-                ],
-            ]);
-
-            $this->stripeClientSecret = $intent->client_secret;
-            $this->dispatch('stripe-ready', clientSecret: $intent->client_secret);
-        } catch (\Exception $e) {
-            $this->addError('order_error', 'Stripe initialization failed: ' . $e->getMessage());
-        }
-    }
-
-    /** Called from JS after Stripe confirms payment */
-    public function finalizeStripeOrder(string $paymentIntentId, CartService $cart, OrderService $orderService)
-    {
-        Stripe::setApiKey(config('services.stripe.secret'));
-
-        try {
-            $intent = PaymentIntent::retrieve($paymentIntentId);
-        } catch (\Exception $e) {
-            $this->dispatch('show-toast', message: 'Payment verification failed. Please try again.', type: 'error');
-            return;
-        }
-
-        if ($intent->status !== 'succeeded') {
-            $this->dispatch('show-toast', message: 'Payment not completed. Please try again.', type: 'error');
-            return;
-        }
-
-        $billing = [
+        return [
             'name'    => $this->billing_name,
             'phone'   => $this->billing_phone,
-            'email'   => $this->billing_email,
+            'email'   => $this->billing_email ?: null,
             'address' => $this->billing_address ?: 'Direct Order',
             'city'    => $this->billing_city ?: 'Islamabad',
             'state'   => 'Federal',
             'zip'     => '44000',
             'country' => 'PK',
         ];
+    }
 
-        $shipping = $billing;
+    private function limitCheckout(): bool
+    {
+        $key = 'checkout:'.request()->ip();
+        if (RateLimiter::tooManyAttempts($key, 12)) {
+            $this->addError('order_error', 'Please wait a minute before trying checkout again.');
+            return false;
+        }
+        RateLimiter::hit($key, 60);
+        return true;
+    }
 
-        $order = $orderService->createOrder($billing, $shipping, 'stripe', $this->customer_notes ?: null, $paymentIntentId);
+    public function createPaymentIntent(CartService $cart, OrderService $orders, StripeCheckout $stripe): void
+    {
+        abort_unless(StripeCheckout::enabled() && $this->payment_method === 'stripe', 403);
+        $this->validate();
+        if (!$this->limitCheckout()) return;
+        try {
+            $intent = $stripe->begin($cart, $orders, $this->billing(), $this->customer_notes ?: null);
+            if ($intent->status === 'succeeded') {
+                $this->finalizeStripeOrder($intent->id, $cart, $orders, $stripe);
+                return;
+            }
+            $this->dispatch('stripe-ready', clientSecret: $intent->client_secret);
+        } catch (\DomainException $exception) {
+            $this->addError('order_error', $exception->getMessage());
+        } catch (\Throwable $exception) {
+            report($exception);
+            $this->addError('order_error', 'Card checkout is temporarily unavailable. Please try again.');
+        }
+    }
 
+    public function finalizeStripeOrder(string $paymentIntentId, CartService $cart, OrderService $orders, StripeCheckout $stripe)
+    {
+        abort_unless(StripeCheckout::enabled(), 403);
+        try {
+            $order = $stripe->finish($paymentIntentId, $orders);
+        } catch (\Exception $exception) {
+            $this->addError('order_error', 'We could not confirm the payment. Check your receipt before retrying.');
+            return;
+        }
+        if (session('card_checkout_cart') === $cart->getCart()) {
+            $cart->clear();
+        }
+        session()->forget(['card_checkout_cart', 'card_checkout_order']);
         $this->dispatch('cart-updated');
         return redirect()->route('order.confirmation', $order->order_number);
     }

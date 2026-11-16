@@ -40,6 +40,36 @@ class CatalogImageUploadsTest extends TestCase
             'whatsapp_number' => '03009362584', 'image_url' => '/storage/categories/old.jpg', 'is_active' => true]);
     }
 
+    public function test_five_file_selection_preserves_gallery_order_primary_and_existing_photos(): void
+    {
+        $this->admin();
+        $form = Livewire::test(ProductForm::class)
+            ->set('category_id', $this->category()->id)->set('name', 'Duck Soap Tray')->set('base_price', '150');
+        $form->call('reservePhotoSlots', 5)->assertReturned([0, 1, 2, 3, 4]);
+        for ($index = 0; $index < 5; $index++) {
+            $form->set('imageUploads.'.$index, UploadedFile::fake()->image('Duck Soap Tray-'.($index + 1).'.jpg', 120 + $index, 100));
+        }
+        $form->call('save')->assertHasNoErrors()->assertRedirect(route('admin.products.index'));
+        $product = Product::where('name', 'Duck Soap Tray')->firstOrFail();
+        $photos = $product->images()->orderBy('sort_order')->get();
+        $this->assertSame([0, 1, 2, 3, 4], $photos->pluck('sort_order')->all());
+        $this->assertEquals([true, false, false, false, false], $photos->pluck('is_primary')->all());
+        foreach ($photos as $index => $photo) {
+            $asset = MediaAsset::findOrFail(basename($photo->image_url));
+            $this->assertSame(120 + $index, (int) $asset->width);
+        }
+
+        $staleForm = Livewire::test(ProductForm::class, ['id' => $product->id]);
+        Livewire::test(ProductForm::class, ['id' => $product->id])
+            ->call('reservePhotoSlots', 2)->assertReturned([5, 6])
+            ->set('imageUploads.5', UploadedFile::fake()->image('six.jpg'))
+            ->set('imageUploads.6', UploadedFile::fake()->image('seven.jpg'))
+            ->call('save')->assertHasNoErrors();
+        $staleForm->call('save')->assertHasErrors(['save']);
+        $this->assertSame(7, $product->images()->count());
+        $this->assertSame($photos[0]->id, $product->images()->where('is_primary', true)->sole()->id);
+    }
+
     public function test_optimized_image_survives_loss_of_local_files_and_supports_http_caching(): void
     {
         $file = UploadedFile::fake()->image('photo.png', 2400, 1200);
@@ -188,7 +218,7 @@ class CatalogImageUploadsTest extends TestCase
         $this->mock(ImageStorage::class)->shouldReceive('store')->andThrow(new \RuntimeException('private SQL binding'));
         $this->post(route('admin.products.images.upload', $product), ['image' => UploadedFile::fake()->image('photo.jpg'), 'index' => 0], ['Accept' => 'application/json'])
             ->assertStatus(500)->assertJsonPath('error_code', 'SERVER_UPLOAD_FAILED')
-            ->assertJsonStructure(['request_id', 'exception_type', 'debug'])
+            ->assertJsonStructure(['request_id'])->assertJsonMissingPath('debug')->assertJsonMissingPath('exception_type')
             ->assertDontSee('private SQL binding');
         $this->assertDatabaseCount('product_images', 0);
     }

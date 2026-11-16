@@ -8,7 +8,7 @@
                 @if($slides->isNotEmpty())
                     @foreach($slides as $index => $slide)
                         <div class="hero-slide-item {{ $index === 0 ? 'active' : '' }}" data-index="{{ $index }}" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:{{ $index === 0 ? '1' : '0' }};transition:opacity 0.6s ease-in-out;z-index:{{ $index === 0 ? '2' : '1' }}">
-                            <a href="{{ $slide->link_url }}" style="display:block;width:100%;height:100%;position:relative">
+                            <a href="{{ is_store_link($slide->link_url) ? $slide->link_url : route('shop') }}" style="display:block;width:100%;height:100%;position:relative">
                                 <img src="{{ $slide->image_url }}" alt="{{ $slide->title }}" decoding="async" onerror="this.onerror=null;this.src='{{ asset('images/hero-fallback.svg') }}'" style="width:100%;height:100%;object-fit:cover;display:block">
                                 {{-- Subtle gradient overlay for text readability if needed --}}
                                 <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top, rgba(15,23,42,0.8) 0%, transparent 60%);padding:10px 12px 14px;text-align:center">

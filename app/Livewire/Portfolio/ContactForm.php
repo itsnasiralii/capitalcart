@@ -56,6 +56,8 @@ class ContactForm extends Component
             return;
         }
 
+        RateLimiter::hit($throttleKey, 600);
+
         // 3. Validation
         $validated = $this->validate();
 
@@ -68,8 +70,6 @@ class ContactForm extends Component
             'ip_address' => request()->ip(),
             'is_read'    => false,
         ]);
-
-        RateLimiter::hit($throttleKey, 600);
 
         // 5. Success state
         $this->isSuccess = true;
