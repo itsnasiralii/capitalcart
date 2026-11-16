@@ -53,7 +53,10 @@ Route::get('/checkout', function () {
 
 Route::get('/order-confirmation/{orderNumber}', function (string $orderNumber) {
     $order = Order::with('items')->where('order_number', $orderNumber)->firstOrFail();
-    return view('pages.order-confirmation', compact('order'));
+    abort_unless(app(\App\Services\OrderService::class)->canViewReceipt($order), 404);
+    return response()->view('pages.order-confirmation', compact('order'))
+        ->header('Cache-Control', 'private, no-store')
+        ->header('Referrer-Policy', 'no-referrer');
 })->name('order.confirmation');
 
 Route::get('/order-confirmation/{orderNumber}/whatsapp', function (string $orderNumber) {
@@ -72,8 +75,9 @@ Route::get('/portfolio', function () {
 
 Route::get('/portfolio/download-cv', function () {
     $cvPath = setting('portfolio_cv_file');
-    if ($cvPath && file_exists(public_path('storage/' . $cvPath))) {
-        return response()->download(public_path('storage/' . $cvPath), 'Nasir_Ali_CV.pdf');
+    if (is_string($cvPath) && preg_match('~^portfolio/cv/[a-zA-Z0-9_-]+\.(pdf|docx?)$~iD', $cvPath, $match)
+        && \Illuminate\Support\Facades\Storage::disk('public')->exists($cvPath)) {
+        return \Illuminate\Support\Facades\Storage::disk('public')->download($cvPath, 'Nasir_Ali_CV.'.strtolower($match[1]));
     }
 
     $cvContent = "NASIR ALI — NETWORK ENGINEER & SOFTWARE DEVELOPER\n"
@@ -116,12 +120,33 @@ Route::get('/portfolio/download-cv', function () {
         ->header('Content-Disposition', 'attachment; filename="Nasir_Ali_Resume.txt"');
 })->name('portfolio.cv.download');
 
+Route::post('/payments/stripe/webhook', \App\Http\Controllers\StripeWebhookController::class);
+
+Route::view('/privacy', 'pages.privacy')->name('privacy');
+Route::view('/ordering', 'pages.ordering')->name('ordering');
+Route::post('/privacy/visitor-count', function (\Illuminate\Http\Request $request) {
+    $request->validate(['allow' => ['required', 'boolean']]);
+    $request->session()->put('allow_visitor_count', $request->boolean('allow'));
+    if (!$request->boolean('allow')) {
+        $record = $request->session()->pull('visitor_record');
+        if ($record) {
+            \App\Models\ActiveVisitor::where('session_id', $record)->delete();
+        }
+        $request->session()->forget('last_visitor_ping');
+    }
+    return redirect()->route('privacy')->with('account_message', 'Your preference has been saved.');
+})->middleware('throttle:10,1')->name('privacy.visitors');
+Route::middleware(['auth', 'throttle:5,1'])->group(function () {
+    Route::put('/account/password', [\App\Http\Controllers\AccountController::class, 'changePassword'])->name('account.password');
+    Route::delete('/account', [\App\Http\Controllers\AccountController::class, 'destroy'])->name('account.destroy');
+});
+
 // Auth
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

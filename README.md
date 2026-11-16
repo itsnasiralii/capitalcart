@@ -176,37 +176,10 @@ VITE_STRIPE_KEY="${STRIPE_KEY}" # exposes the publishable key to the browser
 
 ---
 
-## Default accounts
 
-After running `php artisan db:seed`, the following accounts are ready to use.
+## Administrator setup
 
-### Admin accounts
-
-| Name      | Email                   | Password              |
-| --------- | ----------------------- | --------------------- |
-| Nasir Ali | nasirali@capitalcart.pk | `nasirali123`         |
-| Nasir Ali | nasir@capitalcart.pk    | `NasirAli@123`        |
-
-Log in at `/login` and you'll be redirected to `/admin/dashboard` automatically.
-
-### Customer accounts
-
-All dummy customers use the password `password`.
-
-| Name          | Email             |
-| ------------- | ----------------- |
-| Alice Johnson | alice@example.com |
-| Bob Smith     | bob@example.com   |
-| Carol White   | carol@example.com |
-| David Brown   | david@example.com |
-| Emma Davis    | emma@example.com  |
-| Frank Miller  | frank@example.com |
-| Grace Wilson  | grace@example.com |
-| Henry Moore   | henry@example.com |
-| Isla Taylor   | isla@example.com  |
-| Jack Anderson | jack@example.com  |
-
----
+Run `php artisan admin:create` from a trusted server console. The command prompts privately for a password and creates a new account. Existing users keep their credentials and roles. Demo data is seeded only in local and testing environments.
 
 ## Key URLs
 

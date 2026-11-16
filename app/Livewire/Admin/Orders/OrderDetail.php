@@ -21,6 +21,7 @@ class OrderDetail extends Component
 
     public function updateStatus(OrderService $orderService): void
     {
+        $this->validate(['adminNotes' => 'nullable|string|max:10000']);
         if ($this->newStatus !== $this->order->status) {
             $orderService->updateStatus($this->order, $this->newStatus);
             $this->order->refresh();

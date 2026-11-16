@@ -62,7 +62,7 @@ class SubscriberList extends Component
             $query->where('status', $this->statusFilter);
         }
 
-        $subscribers = $query->latest('subscribed_at')->get();
+        $subscribers = $query->latest('subscribed_at')->cursor();
 
         $headers = [
             'Content-Type'        => 'text/csv',
@@ -79,7 +79,7 @@ class SubscriberList extends Component
             foreach ($subscribers as $row) {
                 fputcsv($handle, [
                     $row->id,
-                    $row->email,
+                    csv_cell($row->email),
                     $row->status,
                     $row->subscribed_at?->toDateTimeString() ?? '',
                     $row->unsubscribed_at?->toDateTimeString() ?? '',

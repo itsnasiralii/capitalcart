@@ -15,7 +15,7 @@ class Order extends Model
         'shipping_name', 'shipping_address', 'shipping_city', 'shipping_state',
         'shipping_zip', 'shipping_country',
         'subtotal', 'discount_amount', 'shipping_amount', 'tax_amount', 'total',
-        'coupon_code', 'payment_method', 'payment_status', 'payment_reference', 'stripe_payment_intent_id',
+        'coupon_code', 'payment_method', 'payment_status', 'payment_reference', 'stripe_payment_intent_id', 'checkout_key', 'refunded_amount',
         'customer_notes', 'admin_notes', 'shipped_at', 'delivered_at',
     ];
 
@@ -27,6 +27,7 @@ class Order extends Model
         'shipping_amount' => 'decimal:2',
         'tax_amount'      => 'decimal:2',
         'total'           => 'decimal:2',
+        'refunded_amount' => 'decimal:2',
         'shipped_at'      => 'datetime',
         'delivered_at'    => 'datetime',
     ];

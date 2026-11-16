@@ -15,19 +15,40 @@ class OrderService
 {
     public function __construct(private CartService $cart) {}
 
-    public function createOrder(array $billing, array $shipping, string $paymentMethod = 'whatsapp', ?string $notes = null, ?string $stripePaymentIntentId = null): Order
+    public function createOrder(array $billing, array $shipping, string $paymentMethod = 'whatsapp', ?string $notes = null, ?string $stripeCheckoutKey = null): Order
     {
-        // 1. Re-validate stock on server
-        $outOfStock = $this->cart->validateStock();
-        if (!empty($outOfStock)) {
-            throw new \Exception('Some items are no longer available in the requested quantity: ' . implode(', ', $outOfStock));
-        }
-
         if ($paymentMethod === 'whatsapp') {
             $this->ensureSingleWhatsAppDestination();
         }
 
-        $order = DB::transaction(function () use ($billing, $shipping, $paymentMethod, $notes, $stripePaymentIntentId) {
+        if ($paymentMethod === 'stripe' && !$stripeCheckoutKey) {
+            throw new \DomainException('Card checkout is unavailable.');
+        }
+        $key = $stripeCheckoutKey ?? $this->cart->checkoutKey($billing, $shipping, $paymentMethod, $notes);
+        $order = Order::where('checkout_key', $key)->first();
+        if (!$order) {
+            try {
+                $order = $this->reserveOrder($billing, $shipping, $paymentMethod, $notes, $key);
+            } catch (\Illuminate\Database\UniqueConstraintViolationException|\DomainException $exception) {
+                // Another request with the same cart may already have reserved the remaining stock.
+                $order = Order::where('checkout_key', $key)->first() ?? throw $exception;
+            }
+        }
+
+        if ($paymentMethod !== 'stripe') {
+            $this->cart->clear();
+        }
+
+        // Only this browser session may open the full contact details sent to WhatsApp.
+        session()->put('whatsapp_order_access.' . $order->id, now()->addHours(24)->timestamp);
+
+        return $order;
+    }
+
+    private function reserveOrder(array $billing, array $shipping, string $paymentMethod, ?string $notes, string $key): Order
+    {
+        return DB::transaction(function () use ($billing, $shipping, $paymentMethod, $notes, $key) {
+            $this->cart->prepareCheckout();
             $subtotal    = $this->cart->getSubtotal();
             $discount    = $this->cart->getDiscount();
             $shippingAmt = $this->cart->getShipping();
@@ -39,7 +60,7 @@ class OrderService
             $isGuest = !auth()->check();
 
             $status = ($paymentMethod === 'whatsapp') ? 'pending_whatsapp' : 'pending';
-            $expiresAt = ($paymentMethod === 'whatsapp' || $isGuest) ? now()->addHours(24) : null;
+            $expiresAt = (in_array($paymentMethod, ['whatsapp', 'stripe'], true) || $isGuest) ? now()->addHours(24) : null;
 
             // Normalized phone
             $rawPhone = $billing['phone'] ?? null;
@@ -72,8 +93,8 @@ class OrderService
                 'total'           => $total,
                 'coupon_code'     => $couponCode,
                 'payment_method'  => $paymentMethod,
-                'payment_status'  => $paymentMethod === 'stripe' ? 'paid' : 'pending',
-                'stripe_payment_intent_id' => $stripePaymentIntentId,
+                'payment_status'  => 'pending',
+                'checkout_key' => $key,
                 'customer_notes'  => $notes,
             ]);
 
@@ -109,16 +130,9 @@ class OrderService
                 Coupon::where('code', $couponCode)->increment('used_count');
             }
 
-            // Clear session cart
-            $this->cart->clear();
-
             return $order;
         });
 
-        // Only this browser session may open the full contact details sent to WhatsApp.
-        session()->put('whatsapp_order_access.' . $order->id, now()->addHours(24)->timestamp);
-
-        return $order;
     }
 
     public function canOpenWhatsApp(Order $order): bool
@@ -128,6 +142,11 @@ class OrderService
             return false;
         }
 
+        return $this->canViewReceipt($order);
+    }
+
+    public function canViewReceipt(Order $order): bool
+    {
         $user = auth()->user();
         if ($user && ($user->is_admin || ($order->user_id && $user->id === $order->user_id))) {
             return true;
@@ -181,7 +200,7 @@ class OrderService
         $numbers = $this->getCartWhatsAppNumbers();
 
         if ($numbers->count() > 1) {
-            throw new \Exception('Iqbal Herbal Store and CapitalCart products use different WhatsApp numbers. Please place them as separate orders.');
+            throw new \DomainException('Iqbal Herbal Store and CapitalCart products use different WhatsApp numbers. Please place them as separate orders.');
         }
     }
 
@@ -215,6 +234,15 @@ class OrderService
 
     public function updateStatus(Order $order, string $status): void
     {
+        if (!in_array($status, Order::STATUSES, true)) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['newStatus' => 'Choose a valid order status.']);
+        }
+        if ($order->payment_method === 'stripe' && $order->payment_status !== 'paid' && $status !== $order->status) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['newStatus' => 'Card payment and refund status must be confirmed by the payment provider.']);
+        }
+        if ($order->payment_method === 'stripe' && $status === 'refunded' && $order->payment_status !== 'refunded') {
+            throw \Illuminate\Validation\ValidationException::withMessages(['newStatus' => 'Process the refund through the payment provider.']);
+        }
         $updates = ['status' => $status];
 
         if ($status === 'shipped') $updates['shipped_at'] = now();

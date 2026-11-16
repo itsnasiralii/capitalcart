@@ -19,7 +19,7 @@ if [ -n "$DATABASE_URL" ]; then
     export DB_DATABASE=$(echo "$DB_HOSTINFO" | cut -d'/' -f2)
     export DB_SSLMODE=require
 
-    echo "Database configured: host=$DB_HOST port=$DB_PORT db=$DB_DATABASE user=$DB_USERNAME"
+    echo "PostgreSQL connection configured."
 fi
 
 # Support Render dynamic PORT
@@ -55,7 +55,8 @@ mkdir -p /tmp/nginx_client_body \
          /tmp/nginx_fastcgi \
          /tmp/nginx_uwsgi \
          /tmp/nginx_scgi
-chmod 777 /tmp/nginx_client_body /tmp/nginx_proxy /tmp/nginx_fastcgi /tmp/nginx_uwsgi /tmp/nginx_scgi
+chown -R www-data:www-data /tmp/nginx_client_body /tmp/nginx_proxy /tmp/nginx_fastcgi /tmp/nginx_uwsgi /tmp/nginx_scgi
+chmod 700 /tmp/nginx_client_body /tmp/nginx_proxy /tmp/nginx_fastcgi /tmp/nginx_uwsgi /tmp/nginx_scgi
 
 # If SQLite is used, ensure database file exists
 if [ "$DB_CONNECTION" = "sqlite" ] || [ -z "$DB_CONNECTION" ]; then
@@ -68,17 +69,7 @@ php artisan storage:link --force || true
 
 # Run database migrations unconditionally
 echo "Running database migrations..."
-php artisan migrate --force || true
-
-# Seed database only if it is empty (prevents duplicate data on restarts)
-echo "Checking if database needs seeding..."
-USER_COUNT=$(php artisan tinker --execute="echo \App\Models\User::count();" 2>/dev/null | tail -1 | tr -d '[:space:]')
-if [ "$USER_COUNT" = "0" ] || [ -z "$USER_COUNT" ]; then
-    echo "Database is empty, seeding now..."
-    php artisan db:seed --force || true
-else
-    echo "Database already has $USER_COUNT user(s), skipping seed."
-fi
+php artisan migrate --force
 
 # Production optimization caches
 php artisan config:clear || true

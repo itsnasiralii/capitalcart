@@ -21,13 +21,20 @@ class CartService
 
     private function saveCart(array $cart): void
     {
+        $cart['checkout_token'] ??= (string) \Illuminate\Support\Str::uuid();
         Session::put(self::SESSION_KEY, $cart);
     }
 
     public function add(int $productId, ?int $variantId = null, int $qty = 1): void
     {
-        $product = Product::with('images')->findOrFail($productId);
-        $variant = $variantId ? ProductVariant::with('variantAttributes')->findOrFail($variantId) : null;
+        if ($qty < 1 || $qty > 9999) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['quantity' => 'Choose a quantity from 1 to 9999.']);
+        }
+        $product = Product::with('images')->where('is_active', true)->findOrFail($productId);
+        $variant = $variantId ? $product->variants()->with('variantAttributes')->findOrFail($variantId) : null;
+        if ($product->is_variable && !$variant) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['variant' => 'Choose a product option first.']);
+        }
 
         $key = $productId . '-' . ($variantId ?? '0');
         $cart = $this->getCart();
@@ -36,7 +43,7 @@ class CartService
         $variantLabel = $variant ? $variant->label : null;
 
         if (isset($cart['items'][$key])) {
-            $cart['items'][$key]['quantity'] += $qty;
+            $cart['items'][$key]['quantity'] = min(9999, $cart['items'][$key]['quantity'] + $qty);
         } else {
             $cart['items'][$key] = [
                 'product_id'    => $productId,
@@ -54,6 +61,22 @@ class CartService
         $this->saveCart($cart);
     }
 
+    public function checkoutKey(array $billing, array $shipping, string $method, ?string $notes): string
+    {
+        $cart = $this->getCart();
+        // Older carts predate checkout_token. An existing session still gives them a stable key.
+        return hash('sha256', json_encode([
+            $cart['checkout_token'] ?? session()->getId(), auth()->id(), $cart, $billing, $shipping, $method, $notes,
+        ], JSON_THROW_ON_ERROR));
+    }
+
+    public function renewCheckoutToken(): void
+    {
+        $cart = $this->getCart();
+        unset($cart['checkout_token']);
+        $this->saveCart($cart);
+    }
+
     public function remove(string $key): void
     {
         $cart = $this->getCart();
@@ -68,7 +91,7 @@ class CartService
             if ($qty <= 0) {
                 unset($cart['items'][$key]);
             } else {
-                $cart['items'][$key]['quantity'] = $qty;
+                $cart['items'][$key]['quantity'] = min(9999, $qty);
             }
         }
         $this->saveCart($cart);
@@ -110,25 +133,56 @@ class CartService
         return $this->getSubtotal() >= $threshold ? 0 : $cost;
     }
 
-    public function validateStock(): array
+    /** Called inside the order transaction, before prices or stock are committed. */
+    public function prepareCheckout(): void
     {
-        $outOfStock = [];
+        $cart = $this->getCart();
+        if (empty($cart['items'])) {
+            throw new \DomainException('Your cart is empty.');
+        }
 
-        foreach ($this->getItems() as $key => $item) {
-            if ($item['variant_id']) {
-                $variant = ProductVariant::find($item['variant_id']);
-                if (!$variant || $variant->stock_quantity < $item['quantity']) {
-                    $outOfStock[] = $item['name'] . ($item['variant_label'] ? " ({$item['variant_label']})" : '');
-                }
-            } else {
-                $product = Product::find($item['product_id']);
-                if (!$product || $product->stock_quantity < $item['quantity']) {
-                    $outOfStock[] = $item['name'];
-                }
+        $items = $cart['items'];
+        ksort($items);
+        $reserved = [];
+        $changed = false;
+        foreach ($items as $key => $item) {
+            $product = Product::lockForUpdate()->find($item['product_id']);
+            $variant = $product && $item['variant_id']
+                ? $product->variants()->lockForUpdate()->find($item['variant_id']) : null;
+            $qty = $item['quantity'];
+            $reserved[$item['product_id']] = ($reserved[$item['product_id']] ?? 0) + $qty;
+            if (!$product || !$product->is_active || $qty < 1 || $qty > 9999
+                || $product->stock_quantity < $reserved[$item['product_id']]
+                || (($product->is_variable || $item['variant_id']) && (!$variant || $variant->stock_quantity < $qty))) {
+                throw new \DomainException('Some items are no longer available in the requested quantity.');
+            }
+
+            $price = (float) ($variant ? $variant->effective_price : $product->effective_price);
+            if ($price < 0) {
+                throw new \DomainException('An item is no longer available at its listed price.');
+            }
+            if (round((float) $item['price'], 2) !== round($price, 2)) {
+                $cart['items'][$key]['price'] = $price;
+                $changed = true;
             }
         }
 
-        return $outOfStock;
+        $subtotal = array_sum(array_map(fn ($item) => $item['price'] * $item['quantity'], $cart['items']));
+        $discount = 0.0;
+        if ($code = $cart['coupon_code'] ?? null) {
+            $coupon = Coupon::where('code', $code)->lockForUpdate()->first();
+            if (!$coupon || !$coupon->is_valid || $subtotal < $coupon->minimum_order) {
+                $cart['coupon_code'] = null;
+                $changed = true;
+            } else {
+                $discount = max(0, min($subtotal, $coupon->calculateDiscount($subtotal)));
+            }
+        }
+        if ($changed || round((float) $cart['discount'], 2) !== round($discount, 2)) {
+            $cart['discount'] = $discount;
+            $this->saveCart($cart);
+            throw new \DomainException('Your cart prices or discount changed. Review the updated total and try again.');
+        }
     }
 
     public function getTax(): float

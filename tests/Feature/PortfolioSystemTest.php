@@ -94,30 +94,31 @@ class PortfolioSystemTest extends TestCase
         $this->get(route('admin.portfolio.index'))->assertRedirect(route('login'));
 
         // 2. Regular user gets 403 Forbidden
-        $customer = User::create([
+        $customer = User::factory()->create([
             'name'     => 'Regular Customer',
             'email'    => 'customer@example.com',
-            'password' => bcrypt('secret123'),
+            'password' => bcrypt(\Illuminate\Support\Str::random()),
             'is_admin' => false,
         ]);
         $this->actingAs($customer)->get(route('admin.portfolio.index'))->assertStatus(403);
 
         // 3. Admin gets 200 OK
-        $admin = User::create([
+        $admin = User::factory()->create([
             'name'     => 'Nasir Ali',
             'email'    => 'admin@capitalcart.pk',
-            'password' => bcrypt('NasirAli@123'),
+            'password' => bcrypt(\Illuminate\Support\Str::random()),
             'is_admin' => true,
         ]);
+        $this->flushSession();
         $this->actingAs($admin)->get(route('admin.portfolio.index'))->assertStatus(200);
     }
 
     public function test_admin_can_update_portfolio_profile_settings(): void
     {
-        $admin = User::create([
+        $admin = User::factory()->create([
             'name'     => 'Nasir Ali',
             'email'    => 'admin@capitalcart.pk',
-            'password' => bcrypt('NasirAli@123'),
+            'password' => bcrypt(\Illuminate\Support\Str::random()),
             'is_admin' => true,
         ]);
 

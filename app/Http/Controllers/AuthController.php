@@ -17,12 +17,15 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required',
+            'email'    => 'required|string|email|max:255',
+            'password' => 'required|string|max:4096',
         ]);
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
+            if ($request->user()->is_admin) {
+                \Illuminate\Support\Facades\Log::notice('Administrator signed in', ['user_id' => $request->user()->id]);
+            }
 
             if (auth()->user()->is_admin) {
                 return redirect()->route('admin.dashboard');
@@ -43,8 +46,8 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users',
-            'password' => 'required|min:8|confirmed',
+            'email'    => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|max:72|confirmed',
         ]);
 
         $user = User::create([

@@ -48,6 +48,76 @@ class OrderCreationAndWhatsAppTest extends TestCase
         Setting::set('free_shipping_threshold', '5000', 'shipping');
     }
 
+    public function test_checkout_retry_reuses_order_and_reserves_stock_once(): void
+    {
+        $cart = app(CartService::class);
+        $cart->add($this->product->id, null, 2);
+        $before = $cart->getCart();
+        $orders = app(OrderService::class);
+        $original = $orders->createOrder([], [], 'cod');
+        session()->put('capitalcart_cart', $before);
+        $retry = $orders->createOrder([], [], 'cod');
+        $this->assertSame($original->id, $retry->id);
+        $this->assertDatabaseCount('orders', 1);
+        $this->assertSame(13, $this->product->fresh()->stock_quantity);
+        $cart->add($this->product->id, null, 2);
+        $this->assertNotSame($original->id, $orders->createOrder([], [], 'cod')->id);
+    }
+
+    public function test_changed_catalog_price_is_shown_before_customer_commits(): void
+    {
+        $cart = app(CartService::class);
+        $cart->add($this->product->id);
+        $this->product->update(['base_price' => 2700]);
+        try {
+            app(OrderService::class)->createOrder([], [], 'cod');
+            $this->fail('The shopper should be asked to confirm the new total.');
+        } catch (\DomainException $exception) {
+            $this->assertStringContainsString('Review', $exception->getMessage());
+        }
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertEquals(2700, $cart->getSubtotal());
+        $this->assertEquals(2700, app(OrderService::class)->createOrder([], [], 'cod')->subtotal);
+    }
+
+    public function test_card_confirmation_and_signed_refund_are_idempotent_and_amount_bound(): void
+    {
+        config(['services.stripe.key' => 'test', 'services.stripe.secret' => 'test',
+            'services.stripe.webhook_secret' => $signingKey = \Illuminate\Support\Str::random()]);
+        $cart = app(CartService::class);
+        $cart->add($this->product->id);
+        $order = app(OrderService::class)->createOrder([], [], 'stripe', null, $cart->checkoutKey([], [], 'stripe', null));
+        $order->update(['stripe_payment_intent_id' => 'pi_local_fixture']);
+        $amount = (int) round((float) $order->total * 100);
+        $intent = ['id' => 'pi_local_fixture', 'object' => 'payment_intent', 'currency' => 'pkr', 'status' => 'succeeded',
+            'amount_received' => $amount, 'metadata' => ['order_number' => $order->order_number]];
+        $deliver = function (string $type, array $object, string $signatureKey) {
+            $body = json_encode(['id' => 'evt_local_fixture', 'object' => 'event', 'type' => $type,
+                'data' => ['object' => $object]], JSON_THROW_ON_ERROR);
+            $time = time();
+            return $this->call('POST', '/payments/stripe/webhook', [], [], [], [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_STRIPE_SIGNATURE' => 't='.$time.',v1='.hash_hmac('sha256', $time.'.'.$body, $signatureKey),
+            ], $body);
+        };
+        $deliver('payment_intent.succeeded', $intent, 'different-local-signing-key')->assertBadRequest();
+        $deliver('payment_intent.succeeded', array_merge($intent, ['amount_received' => $amount - 1]), $signingKey)->assertStatus(409);
+        $this->assertSame('pending', $order->fresh()->payment_status);
+        $deliver('payment_intent.succeeded', $intent, $signingKey)->assertNoContent();
+        $deliver('payment_intent.succeeded', $intent, $signingKey)->assertNoContent();
+        $this->assertSame('paid', $order->fresh()->payment_status);
+        $charge = ['id' => 'ch_local_fixture', 'object' => 'charge', 'payment_intent' => $intent['id'],
+            'amount' => $amount, 'currency' => 'pkr', 'amount_refunded' => 100];
+        $deliver('charge.refunded', $charge, $signingKey)->assertNoContent();
+        $this->assertEquals(1, $order->fresh()->refunded_amount);
+        $deliver('charge.refunded', array_merge($charge, ['amount_refunded' => $amount]), $signingKey)->assertNoContent();
+        $deliver('charge.refunded', $charge, $signingKey)->assertNoContent();
+        $deliver('payment_intent.succeeded', $intent, $signingKey)->assertNoContent();
+        $this->assertSame('refunded', $order->fresh()->payment_status);
+        $this->assertEquals($order->total, $order->fresh()->refunded_amount);
+        $this->assertSame(14, $this->product->fresh()->stock_quantity);
+    }
+
     public function test_generates_cryptographic_order_number_with_cc_prefix(): void
     {
         $orderNumber = Order::generateOrderNumber();
@@ -198,7 +268,7 @@ class OrderCreationAndWhatsAppTest extends TestCase
         session()->forget('whatsapp_order_access');
         $this->get(route('order.whatsapp', $order->order_number))->assertForbidden();
         $this->get(route('order.confirmation', $order->order_number))
-            ->assertOk()->assertDontSee('03451234567')->assertDontSee('Send Order Details on WhatsApp');
+            ->assertNotFound()->assertDontSee('03451234567');
     }
 
     public function test_guest_checkout_via_livewire_succeeds_with_pakistani_phone(): void

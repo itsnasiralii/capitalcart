@@ -13,7 +13,11 @@ class TrackActiveVisitors
         $response = $next($request);
 
         // Only track for regular GET webpage requests
-        if (!$request->isMethod('GET') || $request->ajax() || $request->is('admin*', 'livewire*', 'storage*', 'media/*')) {
+        if (!$request->isMethod('GET') || $request->ajax() || $request->is('admin*', 'livewire*', 'storage*', 'media/*', 'product-images/*', 'login', 'register', 'account/*', 'checkout', 'order-confirmation/*')) {
+            return $response;
+        }
+
+        if (!$request->session()->get('allow_visitor_count', false) || $request->header('DNT') === '1' || $request->header('Sec-GPC') === '1' || !setting('show_visitor_counter', 1)) {
             return $response;
         }
 
@@ -34,6 +38,7 @@ class TrackActiveVisitors
             session()->put('last_visitor_ping', time());
             try {
                 ActiveVisitor::track(session()->getId());
+                session()->put('visitor_record', hash('sha256', session()->getId()));
 
                 // Probabilistic cleanup of expired records (1 in 50 requests)
                 if (random_int(1, 50) === 1) {

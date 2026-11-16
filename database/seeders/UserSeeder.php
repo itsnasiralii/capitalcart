@@ -10,6 +10,10 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
+        if (!app()->environment(['local', 'testing'])) {
+            return;
+        }
+
         $users = [
             ['name' => 'Alice Johnson',  'email' => 'alice@example.com'],
             ['name' => 'Bob Smith',      'email' => 'bob@example.com'],
@@ -24,11 +28,11 @@ class UserSeeder extends Seeder
         ];
 
         foreach ($users as $user) {
-            User::updateOrCreate(
+            User::firstOrCreate(
                 ['email' => $user['email']],
                 [
                     'name'              => $user['name'],
-                    'password'          => Hash::make('password'),
+                    'password'          => Hash::make(\Illuminate\Support\Str::random(64)),
                     'is_admin'          => false,
                     'email_verified_at' => now(),
                 ]

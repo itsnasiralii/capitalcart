@@ -43,6 +43,49 @@ class CustomerPrivacyMaskingTest extends TestCase
         ]);
     }
 
+    public function test_receipt_is_private_to_its_customer(): void
+    {
+        $owner = User::factory()->create();
+        $another = User::factory()->create();
+        $order = $this->createOrder();
+        $order->update(['user_id' => $owner->id, 'is_guest' => false]);
+        $url = route('order.confirmation', $order->order_number);
+        $this->actingAs($another)->get($url)->assertNotFound();
+        $this->flushSession();
+        $response = $this->actingAs($owner)->get($url)->assertOk()->assertHeader('Referrer-Policy', 'no-referrer');
+        $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+    }
+
+    public function test_customer_can_change_password_and_delete_login_while_order_is_retained(): void
+    {
+        $old = \Illuminate\Support\Str::random();
+        $new = \Illuminate\Support\Str::random();
+        $user = User::factory()->create(['password' => $old]);
+        $order = $this->createOrder();
+        $order->update(['user_id' => $user->id]);
+        $this->actingAs($user)->put(route('account.password'), [
+            'current_password' => $old, 'password' => $new, 'password_confirmation' => $new,
+        ])->assertSessionHasNoErrors();
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check($new, $user->fresh()->password));
+        $this->delete(route('account.destroy'), ['current_password' => $old, 'confirm_delete' => '1'])->assertSessionHasErrors('current_password');
+        $this->delete(route('account.destroy'), ['current_password' => $new, 'confirm_delete' => '1'])->assertRedirect(route('privacy'));
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', ['id' => $user->id]);
+        $this->assertNull($order->fresh()->user_id);
+    }
+
+    public function test_public_pages_respect_visitor_preference(): void
+    {
+        $this->get('/privacy')->assertOk()->assertHeader('X-Content-Type-Options', 'nosniff');
+        $this->assertDatabaseCount('active_visitors', 0);
+        $this->post(route('privacy.visitors'), ['allow' => '1'])->assertRedirect(route('privacy'));
+        $this->get('/')->assertOk();
+        $this->assertDatabaseCount('active_visitors', 1);
+        $this->post(route('privacy.visitors'), ['allow' => '0']);
+        $this->get('/')->assertOk();
+        $this->assertDatabaseCount('active_visitors', 0);
+    }
+
     public function test_order_model_provides_masked_attributes(): void
     {
         $order = $this->createOrder('03451234567', 'Nasir Ali');
@@ -55,6 +98,8 @@ class CustomerPrivacyMaskingTest extends TestCase
     {
         $order = $this->createOrder('03451234567', 'Nasir Ali');
 
+        $this->get(route('order.confirmation', $order->order_number))->assertNotFound();
+        $this->withSession(['whatsapp_order_access.'.$order->id => now()->addHour()->timestamp]);
         $response = $this->get(route('order.confirmation', $order->order_number));
 
         $response->assertStatus(200);

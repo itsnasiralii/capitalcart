@@ -10,6 +10,7 @@
                 <div class="bg-white border rounded-3 p-4 shadow-sm">
                     <form action="{{ route('register') }}" method="POST">
                         @csrf
+                        <p class="small"><a href="{{ route('privacy') }}">How we use your account information</a></p>
                         <div class="mb-3">
                             <label class="form-label">Full Name</label>
                             <input type="text" name="name" value="{{ old('name') }}" class="form-control @error('name') is-invalid @enderror" placeholder="John Doe">

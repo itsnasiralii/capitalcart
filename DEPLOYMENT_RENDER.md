@@ -39,19 +39,9 @@ git push -u origin master
 
 ---
 
-## 🔑 Step 3: Admin Seeding on Render (One-time)
+## Create an administrator
 
-Once deployment finishes, open your web service on Render, go to the **Shell** tab, and run:
-
-```bash
-php artisan db:seed
-```
-
-This will create the default admin account:
-- **Email**: `nasirali@capitalcart.pk`
-- **Password**: `NasirAli@123`
-
----
+In the server console, run `php artisan admin:create` and follow the private prompts.
 
 ## 🌐 Custom Domain & Free SSL
 Render automatically provisions a free SSL certificate (`https://your-app.onrender.com`).

@@ -40,10 +40,7 @@ class OrderList extends Component
     public function updateOrderStatus(int $orderId, string $status): void
     {
         $order = Order::findOrFail($orderId);
-        $order->status = $status;
-        if ($status === 'shipped') $order->shipped_at = now();
-        if ($status === 'delivered') $order->delivered_at = now();
-        $order->save();
+        app(\App\Services\OrderService::class)->updateStatus($order, $status);
 
         $this->dispatch('show-toast', message: "Order #{$order->order_number} marked as {$order->status_label}.", type: 'success');
     }
@@ -51,7 +48,7 @@ class OrderList extends Component
     public function exportCsv(): StreamedResponse
     {
         $query = $this->buildQuery();
-        $orders = $query->get();
+        $orders = $query->without('items')->cursor();
 
         $headers = [
             'Content-Type'        => 'text/csv',
@@ -81,7 +78,7 @@ class OrderList extends Component
             ]);
 
             foreach ($orders as $order) {
-                fputcsv($handle, [
+                fputcsv($handle, array_map('csv_cell', [
                     $order->order_number,
                     $order->billing_name,
                     $order->billing_phone,
@@ -96,7 +93,7 @@ class OrderList extends Component
                     $order->status,
                     $order->created_at->toDateTimeString(),
                     $order->expires_at?->toDateTimeString() ?? 'N/A',
-                ]);
+                ]));
             }
 
             fclose($handle);

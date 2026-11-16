@@ -30,3 +30,22 @@ if (!function_exists('mask_name')) {
         return PhoneHelper::maskName($name);
     }
 }
+
+function is_public_web_url(?string $url): bool
+{
+    return $url !== null && filter_var($url, FILTER_VALIDATE_URL) !== false
+        && in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true);
+}
+
+function is_store_link(?string $url): bool
+{
+    return is_public_web_url($url) || ($url !== null && preg_match('#^/(?!/)[^\\\\\s]*$#D', $url) === 1);
+}
+
+function csv_cell(mixed $value): mixed
+{
+    if (is_string($value) && preg_match('/^(?:[\t\r\n]|\s*[=+@-])/u', $value)) {
+        return "'".$value;
+    }
+    return $value;
+}

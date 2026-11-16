@@ -60,10 +60,7 @@ class SlideList extends Component
             'subtitle'    => 'nullable|string|max:255',
             'button_text' => 'required|string|max:50',
             'link_url'    => ['nullable', 'string', 'max:255', function ($attribute, $value, $fail) {
-                $relative = preg_match('#^/(?!/)[^\\\\\\s]*$#', $value);
-                $absolute = filter_var($value, FILTER_VALIDATE_URL)
-                    && in_array(strtolower(parse_url($value, PHP_URL_SCHEME) ?? ''), ['http', 'https'], true);
-                if ($value && !$relative && !$absolute) {
+                if ($value && !is_store_link($value)) {
                     $fail('Use a store path such as /shop or an http(s) URL.');
                 }
             }],

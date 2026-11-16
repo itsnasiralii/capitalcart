@@ -130,15 +130,10 @@ return [
 
     'temporary_file_upload' => [
         'disk' => env('LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK', 'local'),
-        'rules' => ['required', 'file', 'max:20480'],
+        'rules' => ['required', 'file', 'mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx', 'max:20480'],
         'directory' => 'livewire-tmp',
-        'middleware' => null,                                 // Example: 'throttle:5,1'            | Default: 'throttle:60,1'
-        'preview_mimes' => [                                  // Supported file types for temporary pre-signed file URLs...
-            'png', 'gif', 'bmp', 'svg', 'wav', 'mp4',
-            'mov', 'avi', 'wmv', 'mp3', 'm4a',
-            'jpg', 'jpeg', 'mpga', 'webp', 'wma',
-            'avif', 'ico', 'jfif',
-        ],
+        'middleware' => ['auth', 'admin', 'throttle:60,1'],
+        'preview_mimes' => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'jfif'],
         'max_upload_time' => 5, // Max duration (in minutes) before an upload is invalidated...
         'cleanup' => true, // Should cleanup temporary uploads older than 24 hrs...
     ],
