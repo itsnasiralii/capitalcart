@@ -7,23 +7,23 @@
                 <div class="col-lg-6">
                     <p class="text-accent fw-600 mb-2 text-uppercase" style="letter-spacing:0.1em;font-size:0.85rem">New Season Arrivals</p>
                     <h1>Discover <span class="hero-accent">Premium</span> Products for Every Lifestyle</h1>
-                    <p class="mt-3 mb-4">Shop thousands of curated products across electronics, fashion, home, and more — all with fast shipping and hassle-free returns.</p>
-                    <div class="d-flex gap-3 flex-wrap">
-                        <a href="{{ route('shop') }}" class="btn btn-lg px-5" style="background:#F97316;color:#fff;font-weight:600">Shop Now</a>
-                        <a href="{{ route('shop', ['sort' => 'featured']) }}" class="btn btn-lg btn-outline-light px-5">Featured Items</a>
+                    <p class="mt-2 mb-3">Shop thousands of curated products across electronics, fashion, home, and more — all with fast shipping and hassle-free returns.</p>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{{ route('shop') }}" class="btn px-4 py-2" style="background:#F97316;color:#fff;font-weight:600">Shop Now</a>
+                        <a href="{{ route('shop', ['sort' => 'featured']) }}" class="btn btn-outline-light px-4 py-2">Featured Items</a>
                     </div>
-                    <div class="d-flex gap-4 mt-4">
+                    <div class="d-flex gap-4 mt-3 pt-1">
                         <div class="text-white">
-                            <div class="fw-bold fs-4 font-poppins">100+</div>
-                            <div class="small" style="color:rgba(255,255,255,0.6)">Products</div>
+                            <div class="fw-bold fs-5 font-poppins">100+</div>
+                            <div class="small" style="color:rgba(255,255,255,0.6);font-size:0.75rem">Products</div>
                         </div>
                         <div class="text-white">
-                            <div class="fw-bold fs-4 font-poppins">10</div>
-                            <div class="small" style="color:rgba(255,255,255,0.6)">Categories</div>
+                            <div class="fw-bold fs-5 font-poppins">10</div>
+                            <div class="small" style="color:rgba(255,255,255,0.6);font-size:0.75rem">Categories</div>
                         </div>
                         <div class="text-white">
-                            <div class="fw-bold fs-4 font-poppins">Free</div>
-                            <div class="small" style="color:rgba(255,255,255,0.6)">Delivery Rs. 2,000+</div>
+                            <div class="fw-bold fs-5 font-poppins">Free</div>
+                            <div class="small" style="color:rgba(255,255,255,0.6);font-size:0.75rem">Delivery Rs. 2,000+</div>
                         </div>
                     </div>
                 </div>
