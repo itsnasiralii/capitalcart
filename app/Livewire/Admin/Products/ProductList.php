@@ -121,7 +121,7 @@ class ProductList extends Component
 
         if ($this->csvFile) {
             $this->validate([
-                'csvFile' => 'file|max:51200',
+                'csvFile' => 'file|mimes:csv,txt|max:51200',
             ]);
             $filePath = $this->csvFile->getRealPath();
         } else {
