@@ -4,14 +4,16 @@ namespace App\Livewire\Admin\Products;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\ProductBulkImportService;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\WithFileUploads;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 
 class ProductList extends Component
 {
-    use WithPagination;
+    use WithPagination, WithFileUploads;
 
     #[Url]
     public string $search = '';
@@ -26,6 +28,16 @@ class ProductList extends Component
     public string $sort = 'newest';
 
     public ?int $deleteId = null;
+
+    // Bulk Import properties
+    public bool $showBulkModal = false;
+    public $csvFile = null;
+    public float $bulkMarkup = 250;
+    public int $bulkDefaultStock = 50;
+    public string $bulkDefaultCategory = '';
+    public bool $bulkUpdateExisting = true;
+    public bool $isImporting = false;
+    public string $importFeedback = '';
 
     public function updatedSearch(): void { $this->resetPage(); }
     public function updatedCategory(): void { $this->resetPage(); }
@@ -88,6 +100,60 @@ class ProductList extends Component
             Product::findOrFail($this->deleteId)->delete();
             $this->deleteId = null;
             $this->dispatch('show-toast', message: 'Product deleted.', type: 'success');
+        }
+    }
+
+    public function openBulkModal(): void
+    {
+        $this->showBulkModal = true;
+        $this->importFeedback = '';
+    }
+
+    public function closeBulkModal(): void
+    {
+        $this->showBulkModal = false;
+        $this->csvFile = null;
+    }
+
+    public function runBulkImport(ProductBulkImportService $importer): void
+    {
+        $filePath = null;
+
+        if ($this->csvFile) {
+            $this->validate([
+                'csvFile' => 'file|max:51200',
+            ]);
+            $filePath = $this->csvFile->getRealPath();
+        } else {
+            $defaultPath = database_path('data/products.csv');
+            if (file_exists($defaultPath)) {
+                $filePath = $defaultPath;
+            } else {
+                $this->addError('csvFile', 'Please select a CSV file or ensure database/data/products.csv is present.');
+                return;
+            }
+        }
+
+        $this->isImporting = true;
+
+        try {
+            $results = $importer->importFromCsv($filePath, [
+                'markup'              => $this->bulkMarkup,
+                'default_stock'       => $this->bulkDefaultStock,
+                'default_category_id' => $this->bulkDefaultCategory ?: null,
+                'update_existing'     => $this->bulkUpdateExisting,
+            ]);
+
+            $this->importFeedback = "Import complete! Created {$results['imported']} new products, updated {$results['updated']}.";
+            $this->dispatch('show-toast', message: $this->importFeedback, type: 'success');
+            $this->showBulkModal = false;
+            $this->csvFile = null;
+            $this->resetPage();
+        } catch (\Throwable $e) {
+            $this->importFeedback = 'Error importing: ' . $e->getMessage();
+            $this->dispatch('show-toast', message: $this->importFeedback, type: 'error');
+        } finally {
+            $this->isImporting = false;
         }
     }
 
