@@ -27,7 +27,7 @@
                             @endif
                         </a>
                         <div class="product-card-body d-flex flex-column flex-grow-1 p-3">
-                            <div class="text-muted small mb-1">{{ $product->category->name }}</div>
+                            <div class="text-muted small mb-1">{{ $product->category?->name ?? 'General' }}</div>
                             <a href="{{ route('product.show', $product->slug) }}" class="text-decoration-none text-dark">
                                 <h6 class="fw-600 mb-2" style="line-height:1.4">{{ $product->name }}</h6>
                             </a>

@@ -96,7 +96,7 @@
                                          onerror="this.onerror=null;this.src='https://placehold.co/600x600/f1f5f9/94a3b8?text={{ rawurlencode($product->name) }}'">
                                 </a>
                                 <div class="product-body d-flex flex-column flex-grow-1">
-                                    <div class="product-category">{{ $product->category->name }}</div>
+                                    <div class="product-category text-truncate">{{ $product->category?->name ?? 'General' }}</div>
                                     <a href="{{ route('product.show', $product->slug) }}" class="product-name text-decoration-none">{{ $product->name }}</a>
 
                                     {{-- Stars --}}

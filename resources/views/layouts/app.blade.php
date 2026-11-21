@@ -48,18 +48,36 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navMenu">
-            <ul class="navbar-nav me-auto ms-3 gap-1">
+            <ul class="navbar-nav me-auto ms-3 gap-1 align-items-lg-center">
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">Home</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('shop') ? 'active' : '' }}" href="{{ route('shop') }}">Shop</a>
+                    <a class="nav-link {{ request()->routeIs('shop') && !request('category') && !request('sort') ? 'active' : '' }}" href="{{ route('shop') }}">Shop</a>
                 </li>
-                @foreach(\App\Models\Category::active()->orderBy('sort_order')->limit(4)->get() as $cat)
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-inline-flex align-items-center gap-1 {{ request('category') ? 'active' : '' }}" href="#" id="categoryNavDropdown2" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Categories
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-dark shadow-lg border-0 py-2" aria-labelledby="categoryNavDropdown2" style="background:#1E293B; max-height: 400px; overflow-y: auto; min-width: 250px; border-radius: 0.75rem;">
+                        <li><a class="dropdown-item py-2 px-3 fw-600" href="{{ route('shop') }}" style="color:#F97316">All Categories &rarr;</a></li>
+                        <li><hr class="dropdown-divider border-secondary my-1"></li>
+                        @php
+                            $navCategories = \App\Models\Category::active()->withCount('products')->orderByDesc('products_count')->take(15)->get();
+                        @endphp
+                        @foreach($navCategories as $cat)
+                            <li>
+                                <a class="dropdown-item py-1.5 px-3 text-white-50 text-truncate d-flex justify-content-between align-items-center" style="font-size:0.875rem;" href="{{ route('shop', ['category' => $cat->slug]) }}" title="{{ $cat->name }}">
+                                    <span>{{ Str::limit($cat->name, 28) }}</span>
+                                    <span class="badge bg-secondary ms-2" style="font-size:0.65rem">{{ $cat->products_count }}</span>
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ route('shop', ['category' => $cat->slug]) }}">{{ $cat->name }}</a>
+                    <a class="nav-link {{ request('sort') === 'featured' ? 'active' : '' }}" href="{{ route('shop', ['sort' => 'featured']) }}">Deals</a>
                 </li>
-                @endforeach
             </ul>
             <div class="d-flex align-items-center gap-3">
                 {{-- Live Visitor Counter --}}

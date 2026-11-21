@@ -21,7 +21,7 @@
 
         {{-- Product Info --}}
         <div class="col-lg-6">
-            <div class="text-muted small mb-2">{{ $product->category->name }}</div>
+            <div class="text-muted small mb-2">{{ $product->category?->name ?? 'General' }}</div>
             <h1 class="font-poppins fw-bold" style="font-size:1.75rem;color:#0F172A">{{ $product->name }}</h1>
 
             {{-- Rating --}}
@@ -190,9 +190,11 @@
                 @if($product->sku)
                     <small class="text-muted d-block">SKU: {{ $product->sku }}</small>
                 @endif
-                <small class="text-muted d-block">Category:
-                    <a href="{{ route('shop', ['category' => $product->category->slug]) }}" class="text-primary">{{ $product->category->name }}</a>
-                </small>
+                @if($product->category)
+                    <small class="text-muted d-block">Category:
+                        <a href="{{ route('shop', ['category' => $product->category->slug]) }}" class="text-primary">{{ $product->category->name }}</a>
+                    </small>
+                @endif
             </div>
         </div>
     </div>

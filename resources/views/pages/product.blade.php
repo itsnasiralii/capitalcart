@@ -6,7 +6,9 @@
                 <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li>
                     <li class="breadcrumb-item"><a href="{{ route('shop') }}">Shop</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('shop', ['category' => $product->category->slug]) }}">{{ $product->category->name }}</a></li>
+                    @if($product->category)
+                        <li class="breadcrumb-item"><a href="{{ route('shop', ['category' => $product->category->slug]) }}">{{ $product->category->name }}</a></li>
+                    @endif
                     <li class="breadcrumb-item active">{{ Str::limit($product->name, 40) }}</li>
                 </ol>
             </nav>

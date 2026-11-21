@@ -59,4 +59,23 @@ class Category extends Model
     {
         return $query->whereNull('parent_id');
     }
+
+    public function getImageUrlAttribute(?string $value): string
+    {
+        if (!empty($value)) {
+            return $value;
+        }
+
+        $firstProduct = $this->products()->where('is_active', true)->with('images')->first();
+        if ($firstProduct && $firstProduct->primary_image_url) {
+            return $firstProduct->primary_image_url;
+        }
+
+        return "https://picsum.photos/seed/cat-{$this->id}/400/300";
+    }
+
+    public function getProductsCountAttribute(): int
+    {
+        return $this->products()->where('is_active', true)->count();
+    }
 }

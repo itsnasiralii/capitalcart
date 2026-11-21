@@ -79,19 +79,25 @@
     </section>
 
     {{-- Categories --}}
-    <section class="py-5">
+    <section class="py-5" style="background:#F8FAFC">
         <div class="container">
             <div class="d-flex align-items-end justify-content-between mb-4">
-                <h2 class="section-title mb-0">Shop by Category</h2>
-                <a href="{{ route('shop') }}" class="text-primary fw-500 small">View All →</a>
+                <div>
+                    <span class="text-uppercase text-muted fw-600" style="font-size:0.75rem;letter-spacing:0.1em">Explore Collections</span>
+                    <h2 class="section-title mb-0">Shop by Category</h2>
+                </div>
+                <a href="{{ route('shop') }}" class="text-primary fw-600 small">View All Categories &rarr;</a>
             </div>
             <div class="row g-3">
                 @foreach($categories as $cat)
                     <div class="col-6 col-md-4 col-lg-3">
                         <a href="{{ route('shop', ['category' => $cat->slug]) }}" class="category-card d-block text-decoration-none">
-                            <img src="{{ $cat->image_url ?? 'https://picsum.photos/seed/cat-' . $cat->id . '/400/300' }}" alt="{{ $cat->name }}" loading="lazy">
+                            <img src="{{ $cat->image_url }}" alt="{{ $cat->name }}" loading="lazy">
                             <div class="overlay">
-                                <h5>{{ $cat->name }}</h5>
+                                <div class="w-100">
+                                    <h5 class="text-truncate mb-0" title="{{ $cat->name }}">{{ Str::limit($cat->name, 26) }}</h5>
+                                    <span class="small" style="color:rgba(255,255,255,0.85);font-size:0.75rem">{{ $cat->products_count ?? $cat->products()->count() }} items</span>
+                                </div>
                             </div>
                         </a>
                     </div>
@@ -117,10 +123,11 @@
                                         <span class="badge-sale">-{{ $product->discount_percent }}%</span>
                                     @endif
                                     <span class="badge-featured">Featured</span>
-                                    <img src="{{ $product->primary_image_url }}" alt="{{ $product->name }}" loading="lazy">
+                                    <img src="{{ $product->primary_image_url }}" alt="{{ $product->name }}" loading="lazy"
+                                         onerror="this.onerror=null;this.src='https://placehold.co/600x600/f1f5f9/94a3b8?text={{ rawurlencode($product->name) }}'">
                                 </a>
                                 <div class="product-body d-flex flex-column">
-                                    <div class="product-category">{{ $product->category->name }}</div>
+                                    <div class="product-category text-truncate">{{ $product->category?->name ?? 'General' }}</div>
                                     <a href="{{ route('product.show', $product->slug) }}" class="product-name text-decoration-none">{{ $product->name }}</a>
                                     @if($product->reviews->count() > 0)
                                         <div class="d-flex align-items-center gap-1 mb-2">
@@ -185,10 +192,11 @@
                             <div class="product-card h-100">
                                 <a href="{{ route('product.show', $product->slug) }}" class="product-img-wrap d-block">
                                     <span class="badge-featured" style="background:#22C55E">New</span>
-                                    <img src="{{ $product->primary_image_url }}" alt="{{ $product->name }}" loading="lazy">
+                                    <img src="{{ $product->primary_image_url }}" alt="{{ $product->name }}" loading="lazy"
+                                         onerror="this.onerror=null;this.src='https://placehold.co/600x600/f1f5f9/94a3b8?text={{ rawurlencode($product->name) }}'">
                                 </a>
                                 <div class="product-body">
-                                    <div class="product-category">{{ $product->category->name }}</div>
+                                    <div class="product-category text-truncate">{{ $product->category?->name ?? 'General' }}</div>
                                     <a href="{{ route('product.show', $product->slug) }}" class="product-name text-decoration-none">{{ $product->name }}</a>
                                     <div class="product-price mt-2 mb-2">Rs. {{ number_format($product->effective_price, 0) }}</div>
                                     <a href="{{ route('product.show', $product->slug) }}" class="btn-add-cart d-block text-center">View Product</a>

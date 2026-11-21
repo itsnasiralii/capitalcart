@@ -10,10 +10,14 @@ class HomeController extends Controller
 {
     public function index(): View
     {
-        $featured  = Product::active()->featured()->inStock()->with(['images', 'category', 'reviews'])->limit(8)->get();
-        $categories = Category::active()->orderBy('sort_order')->limit(8)->get();
-        $newArrivals = Product::active()->inStock()->with(['images', 'category'])->latest()->limit(4)->get();
-        $onSale     = Product::active()->whereNotNull('sale_price')->inStock()->with(['images', 'category'])->inRandomOrder()->limit(4)->get();
+        $featured = Product::active()->featured()->inStock()->with(['images', 'category', 'reviews'])->limit(8)->get();
+        if ($featured->isEmpty()) {
+            $featured = Product::active()->inStock()->with(['images', 'category', 'reviews'])->limit(8)->get();
+        }
+
+        $categories = Category::active()->withCount('products')->orderByDesc('products_count')->limit(8)->get();
+        $newArrivals = Product::active()->inStock()->with(['images', 'category'])->latest()->limit(8)->get();
+        $onSale = Product::active()->whereNotNull('sale_price')->inStock()->with(['images', 'category'])->inRandomOrder()->limit(4)->get();
 
         return view('pages.home', compact('featured', 'categories', 'newArrivals', 'onSale'));
     }
