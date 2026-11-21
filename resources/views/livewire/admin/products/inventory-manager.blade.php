@@ -1,4 +1,5 @@
 <div>
+    @if($errors->any()) <div class="alert alert-danger" role="alert">{{ $errors->first() }}</div> @endif
     <div class="d-flex align-items-center gap-3 mb-4">
         <a href="{{ route('admin.products.index') }}" class="btn btn-sm btn-outline-secondary">← Back</a>
         <div>

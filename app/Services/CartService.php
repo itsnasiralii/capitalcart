@@ -21,6 +21,14 @@ class CartService
 
     private function saveCart(array $cart): void
     {
+        $subtotal = array_sum(array_map(fn ($item) => $item['price'] * $item['quantity'], $cart['items']));
+        $coupon = !empty($cart['coupon_code']) ? Coupon::where('code', $cart['coupon_code'])->first() : null;
+        if (!$coupon || !$coupon->is_valid || $subtotal < $coupon->minimum_order) {
+            $cart['coupon_code'] = null;
+            $cart['discount'] = 0;
+        } else {
+            $cart['discount'] = max(0, min($subtotal, $coupon->calculateDiscount($subtotal)));
+        }
         $cart['checkout_token'] ??= (string) \Illuminate\Support\Str::uuid();
         Session::put(self::SESSION_KEY, $cart);
     }

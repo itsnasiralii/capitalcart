@@ -6,7 +6,6 @@ use App\Helpers\PhoneHelper;
 use App\Services\CartService;
 use App\Services\OrderService;
 use Livewire\Component;
-use App\Services\StripeCheckout;
 use Illuminate\Support\Facades\RateLimiter;
 
 class CheckoutForm extends Component
@@ -76,14 +75,10 @@ class CheckoutForm extends Component
             'billing_city'    => ['nullable', 'string', 'max:100'],
             'billing_address' => ['nullable', 'string', 'max:500'],
             'customer_notes'  => ['nullable', 'string', 'max:1000'],
-            'payment_method'  => ['required', 'in:whatsapp,cod,bank_transfer,stripe'],
+            'payment_method'  => ['required', 'in:whatsapp'],
         ];
 
-        if ($this->payment_method === 'stripe') {
-            $rules['billing_email'] = ['required', 'email', 'max:255'];
-        } else {
-            $rules['billing_email'] = ['nullable', 'email', 'max:255'];
-        }
+        $rules['billing_email'] = ['nullable', 'email', 'max:255'];
 
         return $rules;
     }
@@ -93,7 +88,6 @@ class CheckoutForm extends Component
         return [
             'billing_name.required'  => 'Please enter your full name.',
             'billing_phone.required' => 'A valid Pakistani mobile number is required to confirm your order.',
-            'billing_email.required' => 'Email address is required for online card payments.',
         ];
     }
 
@@ -104,12 +98,6 @@ class CheckoutForm extends Component
         }
 
         $this->validate();
-
-        // Stripe is handled via client-side Stripe.js
-        if ($this->payment_method === 'stripe') {
-            $this->dispatch('stripe-submit');
-            return;
-        }
 
         if (!$this->limitCheckout()) return;
         $this->isSubmitting = true;
@@ -145,8 +133,8 @@ class CheckoutForm extends Component
             'email'   => $this->billing_email ?: null,
             'address' => $this->billing_address ?: 'Direct Order',
             'city'    => $this->billing_city ?: 'Islamabad',
-            'state'   => 'Federal',
-            'zip'     => '44000',
+            'state'   => '',
+            'zip'     => '',
             'country' => 'PK',
         ];
     }
@@ -160,43 +148,6 @@ class CheckoutForm extends Component
         }
         RateLimiter::hit($key, 60);
         return true;
-    }
-
-    public function createPaymentIntent(CartService $cart, OrderService $orders, StripeCheckout $stripe): void
-    {
-        abort_unless(StripeCheckout::enabled() && $this->payment_method === 'stripe', 403);
-        $this->validate();
-        if (!$this->limitCheckout()) return;
-        try {
-            $intent = $stripe->begin($cart, $orders, $this->billing(), $this->customer_notes ?: null);
-            if ($intent->status === 'succeeded') {
-                $this->finalizeStripeOrder($intent->id, $cart, $orders, $stripe);
-                return;
-            }
-            $this->dispatch('stripe-ready', clientSecret: $intent->client_secret);
-        } catch (\DomainException $exception) {
-            $this->addError('order_error', $exception->getMessage());
-        } catch (\Throwable $exception) {
-            report($exception);
-            $this->addError('order_error', 'Card checkout is temporarily unavailable. Please try again.');
-        }
-    }
-
-    public function finalizeStripeOrder(string $paymentIntentId, CartService $cart, OrderService $orders, StripeCheckout $stripe)
-    {
-        abort_unless(StripeCheckout::enabled(), 403);
-        try {
-            $order = $stripe->finish($paymentIntentId, $orders);
-        } catch (\Exception $exception) {
-            $this->addError('order_error', 'We could not confirm the payment. Check your receipt before retrying.');
-            return;
-        }
-        if (session('card_checkout_cart') === $cart->getCart()) {
-            $cart->clear();
-        }
-        session()->forget(['card_checkout_cart', 'card_checkout_order']);
-        $this->dispatch('cart-updated');
-        return redirect()->route('order.confirmation', $order->order_number);
     }
 
     public function render(CartService $cart)

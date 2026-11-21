@@ -456,7 +456,7 @@ $link-decoration:        none;
 .cart-table {
   background: #fff;
   border-radius: 0.75rem;
-  overflow: hidden;
+  overflow-x: auto;
   border: 1px solid #E5E7EB;
 
   th {

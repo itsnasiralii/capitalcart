@@ -10,7 +10,8 @@ function openCartSidebar() {
 document.addEventListener('livewire:init', () => {
     Livewire.on('open-cart-sidebar', openCartSidebar);
     Livewire.on('show-toast', (data) => {
-        showToast(data[0]?.message || data[0] || 'Done!', data[0]?.type || 'success');
+        const payload = Array.isArray(data) ? data[0] : data;
+        showToast(payload?.message || (typeof payload === 'string' ? payload : 'Done!'), payload?.type || 'success');
     });
 });
 
@@ -32,12 +33,13 @@ function showToast(message, type = 'success') {
     const html = `
         <div id="${id}" class="toast align-items-center text-white ${colors[type] || 'bg-success'} border-0" role="alert">
             <div class="d-flex">
-                <div class="toast-body fw-medium">${message}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                <div class="toast-body fw-medium"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close notification"></button>
             </div>
         </div>`;
     container.insertAdjacentHTML('beforeend', html);
     const toastEl = document.getElementById(id);
+    toastEl.querySelector('.toast-body').textContent = message;
     const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
     toast.show();
     toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());

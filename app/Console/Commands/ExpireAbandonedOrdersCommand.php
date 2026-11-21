@@ -25,7 +25,7 @@ class ExpireAbandonedOrdersCommand extends Command
             ->whereIn('status', ['pending_whatsapp', 'pending'])
             ->where('payment_status', '!=', 'paid')
             ->where(function ($q) use ($cutoff) {
-                $q->where('created_at', '<=', $cutoff)
+                $q->where(fn ($legacy) => $legacy->whereNull('expires_at')->where('created_at', '<=', $cutoff))
                   ->orWhere(function ($sub) {
                       $sub->whereNotNull('expires_at')
                           ->where('expires_at', '<=', now());
@@ -38,7 +38,7 @@ class ExpireAbandonedOrdersCommand extends Command
                 $order = Order::lockForUpdate()->find($candidate->id);
                 if (!$order || !in_array($order->status, ['pending', 'pending_whatsapp'], true)
                     || $order->payment_status === 'paid'
-                    || ($order->created_at->gt($cutoff) && !$order->expires_at?->isPast())) {
+                    || ($order->expires_at ? $order->expires_at->isFuture() : $order->created_at->gt($cutoff))) {
                     return false;
                 }
                 if ($order->payment_method === 'stripe') {
@@ -68,7 +68,7 @@ class ExpireAbandonedOrdersCommand extends Command
                 }
                 $order->update([
                     'status' => 'expired',
-                    'admin_notes' => trim(($order->admin_notes ?? '') . "\nAutomatically expired after 24 hours of inactivity on " . now()->toDateTimeString()),
+                    'admin_notes' => trim(($order->admin_notes ?? '') . "\nAutomatically expired at the reservation deadline on " . now()->toDateTimeString()),
                 ]);
                 return true;
             });

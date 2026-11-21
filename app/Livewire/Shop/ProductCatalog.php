@@ -30,7 +30,10 @@ class ProductCatalog extends Component
     public float $minPrice = 0;
 
     #[Url]
-    public float $maxPrice = 2000;
+    public ?float $maxPrice = null;
+
+    #[Url]
+    public bool $onSale = false;
 
     public int $perPage = 12;
 
@@ -40,6 +43,13 @@ class ProductCatalog extends Component
     public function updatedInStockOnly(): void { $this->resetPage(); }
     public function updatedMinPrice(): void { $this->resetPage(); }
     public function updatedMaxPrice(): void { $this->resetPage(); }
+    public function updatedOnSale(): void { $this->resetPage(); }
+
+    public function resetFilters(): void
+    {
+        $this->reset('search', 'category', 'sort', 'inStockOnly', 'minPrice', 'maxPrice', 'onSale');
+        $this->resetPage();
+    }
 
     #[Computed]
     public function categories()
@@ -67,17 +77,23 @@ class ProductCatalog extends Component
             $query->where('stock_quantity', '>', 0);
         }
 
-        $query->whereBetween('base_price', [$this->minPrice, $this->maxPrice]);
+        $query->whereRaw('COALESCE(sale_price, base_price) >= CAST(? AS DECIMAL(12, 2))', [max(0, $this->minPrice)]);
+        if ($this->maxPrice !== null) {
+            $query->whereRaw('COALESCE(sale_price, base_price) <= CAST(? AS DECIMAL(12, 2))', [max(0, $this->maxPrice)]);
+        }
+        if ($this->onSale) {
+            $query->whereNotNull('sale_price')->whereColumn('sale_price', '<', 'base_price');
+        }
 
         match ($this->sort) {
-            'price_asc'  => $query->orderBy('base_price', 'asc'),
-            'price_desc' => $query->orderBy('base_price', 'desc'),
+            'price_asc'  => $query->orderByRaw('COALESCE(sale_price, base_price) asc'),
+            'price_desc' => $query->orderByRaw('COALESCE(sale_price, base_price) desc'),
             'name_asc'   => $query->orderBy('name', 'asc'),
             'featured'   => $query->orderBy('is_featured', 'desc')->orderBy('sort_order'),
             default      => $query->orderBy('created_at', 'desc'),
         };
 
-        return $query->paginate($this->perPage);
+        return $query->orderBy('id')->paginate(in_array($this->perPage, [12, 24, 48], true) ? $this->perPage : 12);
     }
 
     public function addToCart(int $productId, CartService $cart): void

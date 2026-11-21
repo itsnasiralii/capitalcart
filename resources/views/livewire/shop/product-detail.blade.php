@@ -10,9 +10,9 @@
                 @if($product->images->count() > 1)
                     <div class="thumbnails">
                         @foreach($product->images as $i => $img)
-                            <div class="thumb {{ $i === 0 ? 'active' : '' }}" onclick="switchImage('{{ $img->image_url }}', this)">
-                                <img src="{{ $img->image_url }}" alt="{{ $product->name }} {{ $i + 1 }}">
-                            </div>
+                            <button type="button" aria-label="View photo {{ $i + 1 }}" class="thumb p-0 {{ $i === 0 ? 'active' : '' }}" onclick="switchImage('{{ $img->image_url }}', this)">
+                                <img src="{{ $img->image_url }}" alt="{{ $product->name }} {{ $i + 1 }}" loading="lazy">
+                            </button>
                         @endforeach
                     </div>
                 @endif
@@ -221,7 +221,7 @@
             </div>
             <div class="tab-pane fade" id="reviews">
                 @if($product->reviews->isEmpty())
-                    <p class="text-muted">No reviews yet. Be the first to review this product!</p>
+                    <p class="text-muted">No reviews yet.</p>
                 @else
                     <div class="row g-3">
                         @foreach($product->reviews as $review)

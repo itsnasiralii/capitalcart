@@ -44,7 +44,7 @@
             </svg>
             <span>Capital<span style="color:#F97316">Cart</span><span class="small" style="font-size:0.75rem;opacity:0.85">.pk</span></span>
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+        <button class="navbar-toggler" type="button" aria-label="Toggle navigation" aria-controls="navMenu" aria-expanded="false" data-bs-toggle="collapse" data-bs-target="#navMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navMenu">
@@ -76,7 +76,7 @@
                     </ul>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ request('sort') === 'featured' ? 'active' : '' }}" href="{{ route('shop', ['sort' => 'featured']) }}">Deals</a>
+                    <a class="nav-link {{ request()->boolean('onSale') ? 'active' : '' }}" href="{{ route('shop', ['onSale' => 1]) }}">Deals</a>
                 </li>
             </ul>
             <div class="d-flex align-items-center gap-3">

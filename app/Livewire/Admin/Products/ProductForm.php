@@ -44,6 +44,9 @@ class ProductForm extends Component
     #[Locked]
     public array $loadedImageIds = [];
 
+    #[Locked]
+    public array $loadedStock = [];
+
     // Variants
     public array $variants = [];
 
@@ -67,6 +70,7 @@ class ProductForm extends Component
             $this->is_variable       = $product->is_variable;
 
             $this->loadedImageIds = $product->images->modelKeys();
+            $this->loadedStock = ['quantity' => $product->stock_quantity, 'variants' => $product->allVariants->pluck('stock_quantity', 'id')->all()];
             $this->images = $product->images->map(fn($img) => [
                 'id'         => $img->id,
                 'url'        => $img->image_url,
@@ -213,6 +217,12 @@ class ProductForm extends Component
         try {
             DB::transaction(function () {
                 $product = $this->productId ? Product::lockForUpdate()->findOrFail($this->productId) : new Product;
+                if ($product->exists) {
+                    $stock = ['quantity' => $product->stock_quantity, 'variants' => $product->allVariants()->orderBy('id')->lockForUpdate()->pluck('stock_quantity', 'id')->all()];
+                    if ($stock != $this->loadedStock) {
+                        throw ValidationException::withMessages(['save' => 'Stock changed since this product opened. Reload before saving.']);
+                    }
+                }
                 if ($product->exists && collect($this->loadedImageIds)->sort()->values()->all()
                     !== $product->images()->reorder('id')->pluck('id')->all()) {
                     throw ValidationException::withMessages(['save' => 'The gallery changed in another window. Reload the product before saving.']);

@@ -163,7 +163,7 @@
             </svg>
             <span>Capital<span style="color:#F97316">Cart</span><span class="small" style="font-size:0.75rem;opacity:0.85">.pk</span></span>
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+        <button class="navbar-toggler" type="button" aria-label="Toggle navigation" aria-controls="navMenu" aria-expanded="false" data-bs-toggle="collapse" data-bs-target="#navMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navMenu">
@@ -195,7 +195,7 @@
                     </ul>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ request('sort') === 'featured' ? 'active' : '' }}" href="{{ route('shop', ['sort' => 'featured']) }}">Deals</a>
+                    <a class="nav-link {{ request()->boolean('onSale') ? 'active' : '' }}" href="{{ route('shop', ['onSale' => 1]) }}">Deals</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('portfolio') ? 'active' : '' }}" href="{{ route('portfolio') }}">
@@ -205,8 +205,8 @@
             </ul>
             <form action="{{ route('shop') }}" method="GET" class="d-none d-xl-flex me-3" style="max-width: 200px;">
                 <div class="input-group input-group-sm">
-                    <input type="text" name="search" value="{{ request('search') }}" class="form-control bg-dark text-white border-secondary" placeholder="Search..." style="font-size:0.8rem; border-radius: 20px 0 0 20px;">
-                    <button class="btn btn-outline-secondary text-white-50" type="submit" style="border-radius: 0 20px 20px 0; border-color: #475569;">
+                    <input type="text" name="search" aria-label="Search products" value="{{ request('search') }}" class="form-control bg-dark text-white border-secondary" placeholder="Search..." style="font-size:0.8rem; border-radius: 20px 0 0 20px;">
+                    <button class="btn btn-outline-secondary text-white-50" type="submit" aria-label="Search" style="border-radius: 0 20px 20px 0; border-color: #475569;">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>

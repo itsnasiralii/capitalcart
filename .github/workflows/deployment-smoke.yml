@@ -33,7 +33,7 @@ jobs:
           import urllib.request
           from pathlib import Path
 
-          base = "https://capitalcart.onrender.com"
+          base = "https://capitalcart.pk"
           expected = Path("public/images/hero-fallback.svg").read_bytes()
           results = []
 

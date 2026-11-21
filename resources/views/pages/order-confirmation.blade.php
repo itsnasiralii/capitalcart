@@ -1,4 +1,4 @@
-<x-layouts.app title="Order Confirmed — CapitalCart.pk">
+<x-layouts.app title="Order status">
 
     <div class="container py-5">
         <div class="text-center py-4 my-2">
@@ -7,8 +7,14 @@
                 <svg width="38" height="38" fill="none" stroke="#16a34a" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
             </div>
 
-            <h1 class="font-poppins fw-bold text-success mb-2 h2">Order Placed Successfully!</h1>
-            <p class="text-muted fs-6 mb-4">Shukriya! Your order has been placed and received. Our team will verify and dispatch it shortly.</p>
+            <h1 class="font-poppins fw-bold text-success mb-2 h2">{{ $order->status_label }}</h1>
+            <p class="text-muted fs-6 mb-4">@if($order->status === 'pending_whatsapp')
+                Your request is saved. Send the details on WhatsApp below so we can confirm your order and delivery. Payment is cash on delivery.
+            @elseif(in_array($order->status, ['cancelled', 'expired', 'refunded'], true))
+                This order is closed. Contact the store on WhatsApp if you need help with it.
+            @else
+                Your order status is shown above. Contact us on WhatsApp for delivery updates.
+            @endif</p>
 
             {{-- Order Number Box --}}
             <div class="d-inline-block bg-white border rounded-3 px-5 py-3 mb-4 shadow-sm">
@@ -44,7 +50,7 @@
                             </div>
                             <div class="col-6 col-sm-3">
                                 <div class="text-muted small">Payment</div>
-                                <div class="fw-bold text-success">{{ strtoupper($order->payment_method) }}</div>
+                                <div class="fw-bold text-success">{{ $order->payment_method === 'whatsapp' ? 'Cash on Delivery via WhatsApp' : strtoupper($order->payment_method) }}</div>
                             </div>
                         </div>
                     </div>
@@ -114,15 +120,7 @@
                 <p class="text-muted small">Open this order in the browser you used at checkout within 24 hours to send its details on WhatsApp.</p>
             @endif
 
-            @if($canOpenWhatsApp && $order->payment_method === 'whatsapp')
-            <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    setTimeout(function() {
-                        window.open(@json($waUrl), '_blank');
-                    }, 1200);
-                });
-            </script>
-            @endif
+
 
             <div class="d-flex gap-3 justify-content-center mt-4">
                 <a href="{{ route('home') }}" class="btn btn-primary px-5 py-2 fw-600">Continue Shopping</a>

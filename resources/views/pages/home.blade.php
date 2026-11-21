@@ -163,7 +163,7 @@
                     <p class="text-accent fw-600 mb-1 text-uppercase" style="font-size:0.8rem;letter-spacing:0.1em">Limited Time</p>
                     <h2 class="text-white font-poppins fw-bold mb-2">Flash Sale — Up to 50% OFF</h2>
                     <p class="mb-4" style="color:rgba(255,255,255,0.7)">Don't miss out on incredible deals across all categories. Use code <strong class="text-accent">FLASH50</strong> at checkout.</p>
-                    <a href="{{ route('shop', ['sort' => 'price_asc']) }}" class="btn btn-lg px-5" style="background:#F97316;color:#fff">Shop Sale</a>
+                    <a href="{{ route('shop', ['onSale' => 1, 'sort' => 'price_asc']) }}" class="btn btn-lg px-5" style="background:#F97316;color:#fff">Shop Sale</a>
                 </div>
                 <div class="col-lg-6 d-none d-lg-flex justify-content-center align-items-center p-4">
                     <div class="row g-2" style="max-width:380px">

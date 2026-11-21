@@ -13,7 +13,7 @@
     @else
         <div class="row g-4">
             <div class="col-lg-8">
-                <div class="cart-table">
+                <div class="cart-table table-responsive">
                     <table class="table table-borderless mb-0">
                         <thead>
                             <tr>
@@ -81,7 +81,7 @@
                             <div class="mt-2 small {{ $couponSuccess ? 'text-success' : 'text-danger' }}">{{ $couponMessage }}</div>
                         @endif
                         <div class="mt-2">
-                            <small class="text-muted">Try: WELCOME10, SAVE20, VIP30, FLASH50</small>
+
                         </div>
                     @endif
                 </div>

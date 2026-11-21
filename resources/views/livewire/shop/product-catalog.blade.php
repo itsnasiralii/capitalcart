@@ -8,7 +8,7 @@
                 {{-- Search --}}
                 <div class="mb-4">
                     <div class="filter-title">Search</div>
-                    <input type="text" wire:model.live.debounce.300ms="search" class="form-control form-control-sm" placeholder="Search products...">
+                    <input type="text" aria-label="Search products" wire:model.live.debounce.300ms="search" class="form-control form-control-sm" placeholder="Search products...">
                 </div>
 
                 {{-- Categories --}}
@@ -28,9 +28,9 @@
                 <div class="mb-4">
                     <div class="filter-title">Price Range</div>
                     <div class="d-flex gap-2 align-items-center">
-                        <input type="number" wire:model.live="minPrice" class="form-control form-control-sm" min="0" placeholder="Min">
+                        <input type="number" aria-label="Minimum price" wire:model.live="minPrice" class="form-control form-control-sm" min="0" placeholder="Min">
                         <span class="text-muted">–</span>
-                        <input type="number" wire:model.live="maxPrice" class="form-control form-control-sm" min="0" placeholder="Max">
+                        <input type="number" aria-label="Maximum price" wire:model.live="maxPrice" class="form-control form-control-sm" min="0" placeholder="No maximum">
                     </div>
                 </div>
 
@@ -43,7 +43,8 @@
                 </div>
 
                 {{-- Reset --}}
-                <button wire:click="$set('search', ''); $set('category', ''); $set('sort', 'newest'); $set('inStockOnly', false); $set('minPrice', 0); $set('maxPrice', 50000)" class="btn btn-sm btn-outline-secondary w-100">Reset Filters</button>
+                <label class="d-block small mb-3"><input type="checkbox" wire:model.live="onSale" class="form-check-input me-1"> On sale only</label>
+                <button wire:click="resetFilters" class="btn btn-sm btn-outline-secondary w-100">Reset Filters</button>
             </div>
         </div>
 
@@ -57,14 +58,14 @@
                 </span>
                 <div class="d-flex align-items-center gap-2">
                     <label class="small text-muted mb-0 me-1">Sort:</label>
-                    <select wire:model.live="sort" class="form-select form-select-sm" style="width:auto">
+                    <select aria-label="Sort products" wire:model.live="sort" class="form-select form-select-sm" style="width:auto">
                         <option value="newest">Newest</option>
                         <option value="featured">Featured</option>
                         <option value="price_asc">Price: Low to High</option>
                         <option value="price_desc">Price: High to Low</option>
                         <option value="name_asc">Name A–Z</option>
                     </select>
-                    <select wire:model.live="perPage" class="form-select form-select-sm" style="width:auto">
+                    <select aria-label="Products per page" wire:model.live="perPage" class="form-select form-select-sm" style="width:auto">
                         <option value="12">12</option>
                         <option value="24">24</option>
                         <option value="48">48</option>

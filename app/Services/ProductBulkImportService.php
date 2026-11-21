@@ -156,7 +156,11 @@ class ProductBulkImportService
                     $stockQuantity = str_contains($stockText, 'out') ? 0 : $defaultStock;
 
                     // 6. Check for existing product by SKU or exact Name
-                    $product = Product::where('sku', $sku)->orWhere('name', $name)->first();
+                    $product = Product::where('sku', $sku)->lockForUpdate()->first();
+                    if (!$product && Product::where('name', $name)->exists()) {
+                        throw new \DomainException('This name already exists under another SKU. Review the source identifier before importing.');
+                    }
+                    $isNew = !$product;
 
                     if ($product) {
                         if (!$updateExisting) {
@@ -172,8 +176,6 @@ class ProductBulkImportService
                             'base_price'        => $basePrice,
                             'sale_price'        => $salePrice,
                             'cost_price'        => $costPrice,
-                            'stock_quantity'    => $stockQuantity,
-                            'is_active'         => true,
                         ]);
 
                         $results['updated']++;
@@ -217,7 +219,7 @@ class ProductBulkImportService
                     }
 
                     // If we have image URLs, store them in product_images
-                    if (!empty($imageUrls)) {
+                    if ($isNew && !empty($imageUrls)) {
                         // Delete old images to prevent duplicates if re-importing
                         $product->images()->delete();
 

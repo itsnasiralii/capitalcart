@@ -10,7 +10,7 @@ class MediaController extends Controller
 {
     public function show(Request $request, MediaAsset $media): Response
     {
-        abort_unless($media->mime_type === 'image/webp', 404);
+        abort_unless(in_array($media->mime_type, ['image/webp', 'image/jpeg'], true), 404);
         $bytes = base64_decode($media->content_base64, true);
         abort_if($bytes === false, 404);
 

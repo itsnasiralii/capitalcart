@@ -27,7 +27,7 @@ class Dashboard extends Component
     #[Computed]
     public function pendingOrders()
     {
-        return Order::where('status', 'pending')->count();
+        return Order::whereIn('status', ['pending', 'pending_whatsapp'])->count();
     }
 
     #[Computed]

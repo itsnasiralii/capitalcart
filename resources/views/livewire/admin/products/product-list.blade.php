@@ -62,7 +62,7 @@
                     <div class="modal-header border-0 pb-0">
                         <div>
                             <h5 class="fw-bold mb-1">Bulk Product Import (CSV)</h5>
-                            <p class="text-muted small mb-0">Upload or import your CSV catalog with automatic Shopify CDN images and pricing markup.</p>
+                            <p class="text-muted small mb-0">Import new products or update descriptions and prices. Existing stock, visibility and photos are preserved.</p>
                         </div>
                         <button type="button" wire:click="closeBulkModal" class="btn-close"></button>
                     </div>
@@ -92,7 +92,7 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small">Default Stock per Product</label>
                                 <input type="number" wire:model="bulkDefaultStock" class="form-control" placeholder="50" min="0">
-                                <small class="text-muted" style="font-size:0.75rem">Stock assigned if not specified as out of stock.</small>
+                                <small class="text-muted" style="font-size:0.75rem">For new products only. Existing stock is preserved.</small>
                             </div>
 
                             <div class="col-md-6">
@@ -109,7 +109,7 @@
                                 <div class="form-check form-switch">
                                     <input type="checkbox" wire:model="bulkUpdateExisting" class="form-check-input" id="bulkUpdateCheck" checked>
                                     <label class="form-check-label small fw-500" for="bulkUpdateCheck">
-                                        Update existing products if SKU/Name already exists
+                                        Update descriptions and prices for matching SKUs
                                     </label>
                                 </div>
                             </div>

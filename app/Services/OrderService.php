@@ -60,7 +60,8 @@ class OrderService
             $isGuest = !auth()->check();
 
             $status = ($paymentMethod === 'whatsapp') ? 'pending_whatsapp' : 'pending';
-            $expiresAt = (in_array($paymentMethod, ['whatsapp', 'stripe'], true) || $isGuest) ? now()->addHours(24) : null;
+            $hours = max(1, min(168, (int) Setting::get('order_expiration_hours', 24)));
+            $expiresAt = now()->addHours($hours);
 
             // Normalized phone
             $rawPhone = $billing['phone'] ?? null;
@@ -160,8 +161,17 @@ class OrderService
         // Unicode escapes keep emoji bytes intact even when a source editor uses a legacy encoding.
         $msg  = "\u{1F6D2} *Assalam-o-Alaikum! New Order from CapitalCart.pk*\n\n";
         $msg .= "\u{1F4E6} *Order ID:* " . $order->order_number . "\n";
+        if ($order->payment_method === 'whatsapp') {
+            $msg .= "*Payment:* Cash on Delivery (COD)\n";
+        }
         $msg .= "\u{1F464} *Customer Name:* " . $order->billing_name . "\n";
         $msg .= "\u{1F4DE} *Contact:* " . $order->billing_phone . "\n";
+        if ($order->shipping_address && !in_array($order->shipping_address, ['Direct Order', 'WhatsApp Order'], true)) {
+            $msg .= "Delivery address: " . $order->shipping_address . "\n";
+        }
+        if ($order->customer_notes) {
+            $msg .= "Order notes: " . $order->customer_notes . "\n";
+        }
         if ($order->shipping_city && $order->shipping_city !== 'Islamabad') {
             $msg .= "\u{1F4CD} *City:* " . $order->shipping_city . "\n";
         }
@@ -237,17 +247,41 @@ class OrderService
         if (!in_array($status, Order::STATUSES, true)) {
             throw \Illuminate\Validation\ValidationException::withMessages(['newStatus' => 'Choose a valid order status.']);
         }
-        if ($order->payment_method === 'stripe' && $order->payment_status !== 'paid' && $status !== $order->status) {
-            throw \Illuminate\Validation\ValidationException::withMessages(['newStatus' => 'Card payment and refund status must be confirmed by the payment provider.']);
-        }
-        if ($order->payment_method === 'stripe' && $status === 'refunded' && $order->payment_status !== 'refunded') {
-            throw \Illuminate\Validation\ValidationException::withMessages(['newStatus' => 'Process the refund through the payment provider.']);
-        }
-        $updates = ['status' => $status];
-
-        if ($status === 'shipped') $updates['shipped_at'] = now();
-        if ($status === 'delivered') $updates['delivered_at'] = now();
-
-        $order->update($updates);
+        DB::transaction(function () use ($order, $status) {
+            $current = Order::lockForUpdate()->findOrFail($order->id);
+            if ($current->status === $status) return;
+            $allowed = [
+                'pending_whatsapp' => ['confirmed', 'processing', 'shipped', 'delivered', 'cancelled'],
+                'pending' => ['confirmed', 'processing', 'shipped', 'delivered', 'cancelled'],
+                'confirmed' => ['processing', 'shipped', 'delivered', 'cancelled'],
+                'processing' => ['shipped', 'delivered', 'cancelled'],
+                'shipped' => ['delivered'],
+            ];
+            if (!in_array($status, $allowed[$current->status] ?? [], true)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['newStatus' => 'This order cannot move to that status. Closed orders cannot be reopened.']);
+            }
+            if ($current->payment_method === 'stripe' && $current->payment_status !== 'paid') {
+                throw \Illuminate\Validation\ValidationException::withMessages(['newStatus' => 'Card payment and refund status must be confirmed by the payment provider.']);
+            }
+            if ($status === 'cancelled') {
+                if ($current->payment_status === 'paid') {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['newStatus' => 'Reconcile the paid order and its refund before closing it.']);
+                }
+                foreach ($current->items()->orderBy('product_id')->orderBy('product_variant_id')->get() as $item) {
+                    Product::withTrashed()->whereKey($item->product_id)->increment('stock_quantity', $item->quantity);
+                    if ($item->product_variant_id) {
+                        ProductVariant::whereKey($item->product_variant_id)->increment('stock_quantity', $item->quantity);
+                    }
+                }
+                if ($current->coupon_code) {
+                    Coupon::where('code', $current->coupon_code)->where('used_count', '>', 0)->decrement('used_count');
+                }
+            }
+            $updates = ['status' => $status, 'expires_at' => null];
+            if ($status === 'shipped') $updates['shipped_at'] = now();
+            if ($status === 'delivered') $updates['delivered_at'] = now();
+            $current->update($updates);
+        }, 3);
+        $order->refresh();
     }
 }

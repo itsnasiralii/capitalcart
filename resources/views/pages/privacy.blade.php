@@ -1,7 +1,7 @@
 <x-layouts.app title="Privacy &amp; account settings">
     <article class="container py-5" style="max-width: 48rem">
         <h1>Privacy &amp; account settings</h1>
-        <p>Capital Cart uses your session to keep your cart and sign you in. When you order, we store your contact details, delivery details, purchased items and payment status to process the order. On WhatsApp checkout, opening the WhatsApp link shares the order details with the seller through WhatsApp. Card payments, when available, use Stripe.</p>
+        <p>Capital Cart uses your session to keep your cart and sign you in. When you order, we store your contact details, delivery details, purchased items and payment status to process the order. On WhatsApp checkout, the link prepares your contact details, delivery address, order notes and bill in WhatsApp. Send the message to share these details with the seller and confirm cash on delivery. Historical card payment records, if any, remain associated with Stripe.</p>
         <p>The newsletter stores the email you submit. The contact form stores your message and contact details. These forms also record an IP address. This site loads fonts from Google Fonts.</p>
         <p>For questions about your information, newsletter removal or past orders, <a href="{{ route('portfolio') }}#contact">contact Capital Cart</a>. Include the order reference if relevant.</p>
         @if(session('account_message')) <p class="alert alert-success" role="status">{{ session('account_message') }}</p> @endif
