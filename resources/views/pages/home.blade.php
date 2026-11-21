@@ -155,28 +155,8 @@
         </section>
     @endif
 
-    {{-- Sale Banner --}}
-    <section class="py-5">
-        <div class="container">
-            <div class="row g-4 align-items-center rounded-4 overflow-hidden" style="background:linear-gradient(135deg,#0F172A,#1E3A5F)">
-                <div class="col-lg-6 p-5">
-                    <p class="text-accent fw-600 mb-1 text-uppercase" style="font-size:0.8rem;letter-spacing:0.1em">Limited Time</p>
-                    <h2 class="text-white font-poppins fw-bold mb-2">Flash Sale — Up to 50% OFF</h2>
-                    <p class="mb-4" style="color:rgba(255,255,255,0.7)">Don't miss out on incredible deals across all categories. Use code <strong class="text-accent">FLASH50</strong> at checkout.</p>
-                    <a href="{{ route('shop', ['onSale' => 1, 'sort' => 'price_asc']) }}" class="btn btn-lg px-5" style="background:#F97316;color:#fff">Shop Sale</a>
-                </div>
-                <div class="col-lg-6 d-none d-lg-flex justify-content-center align-items-center p-4">
-                    <div class="row g-2" style="max-width:380px">
-                        @foreach($onSale->take(4) as $p)
-                            <div class="col-6">
-                                <img src="{{ $p->primary_image_url }}" style="width:100%;height:130px;object-fit:cover;border-radius:0.5rem;opacity:0.85">
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+    {{-- Product Scroller --}}
+    <livewire:product-scroller />
 
     {{-- New Arrivals --}}
     @if($newArrivals->isNotEmpty())

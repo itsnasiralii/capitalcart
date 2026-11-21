@@ -17,8 +17,7 @@ class HomeController extends Controller
 
         $categories = Category::active()->withCount('products')->orderByDesc('products_count')->limit(8)->get();
         $newArrivals = Product::active()->inStock()->with(['images', 'category'])->latest()->limit(8)->get();
-        $onSale = Product::active()->whereNotNull('sale_price')->inStock()->with(['images', 'category'])->inRandomOrder()->limit(4)->get();
 
-        return view('pages.home', compact('featured', 'categories', 'newArrivals', 'onSale'));
+        return view('pages.home', compact('featured', 'categories', 'newArrivals'));
     }
 }
