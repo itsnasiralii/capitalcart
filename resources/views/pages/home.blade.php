@@ -26,7 +26,6 @@
                         <div class="col-6 col-lg-3">
                             <div class="product-card h-100 featured-corner-card">
                                 <span class="featured-corner-accent" aria-hidden="true">
-                                    <svg viewBox="0 0 84 84" focusable="false"><path d="M 6 6 H 66 Q 78 6 78 18 V 78" /></svg>
                                     <span class="featured-corner-dot"></span>
                                 </span>
                                 <a href="{{ route('product.show', $product->slug) }}" class="product-img-wrap d-block">

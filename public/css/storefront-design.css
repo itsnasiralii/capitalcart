@@ -68,23 +68,32 @@
 .home-storefront .product-card .product-price, .home-storefront .product-card .sale-price { color: #ea580c; font-size: 1.1rem; }
 .home-storefront .product-card .btn-add-cart { margin-top: auto; padding: 6px 10px; background: #0754d7; border-radius: 5px; color: #fff; }
 .home-storefront .product-card .btn-add-cart:hover { background: #0644b0; }
-/* Fixed positioning also ships with the release, independent of compiled assets. */
+/* Homepage featured cards only; the dot follows the full responsive perimeter. */
 .home-storefront #featured-products .featured-corner-card { position: relative; }
 .home-storefront #featured-products .featured-corner-accent {
-  position: absolute; top: 0; right: 0; width: 84px; height: 84px;
+  position: absolute; inset: 0;
   pointer-events: none; z-index: 3;
 }
-.featured-corner-accent svg { width: 84px; height: 84px; display: block; }
-.featured-corner-accent path { fill: none; stroke: #facc15; stroke-width: 2; opacity: .3; }
 .featured-corner-dot {
   position: absolute; left: 0; top: 0; width: 8px; height: 8px;
   border-radius: 50%; background: #facc15;
-  offset-path: path("M 6 6 H 66 Q 78 6 78 18 V 78");
   offset-distance: 0%;
+  box-shadow: 0 0 5px rgba(250,204,21,.5);
+}
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .home-storefront #featured-products .featured-corner-card .btn-add-cart {
+    transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease;
+  }
+  .home-storefront #featured-products .featured-corner-card:hover .btn-add-cart,
+  .home-storefront #featured-products .featured-corner-card .btn-add-cart:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(7,84,215,.22);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .home-storefront #featured-products .featured-corner-accent { display: none; }
 }
+/* Fixed positioning also ships with the release, independent of compiled assets. */
 .recent-order-popup {
   position: fixed; left: 16px; bottom: max(16px, env(safe-area-inset-bottom));
   width: min(310px, calc(100vw - 32px)); padding: 12px 14px;
