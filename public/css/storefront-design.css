@@ -1,0 +1,88 @@
+/* Shipped with PHP releases so the homepage never depends on a stale Vite build. */
+.home-storefront .storefront-welcome {
+  padding: 16px 0;
+  background: linear-gradient(110deg, #0f172a, #1d3455);
+  color: #fff;
+}
+.home-storefront .storefront-welcome-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 32%);
+  align-items: center;
+  gap: 28px;
+}
+.home-storefront .storefront-welcome-copy h1 {
+  font: 700 clamp(1.4rem, 2.2vw, 2rem)/1.2 'Poppins', sans-serif;
+  color: #fff;
+  margin: 0 0 6px;
+}
+.home-storefront .storefront-welcome-copy p {
+  color: #e2e8f0;
+  font-size: 1rem;
+  margin: 0 0 12px;
+}
+.storefront-shop-button {
+  display: inline-block;
+  padding: 8px 24px;
+  border-radius: 7px;
+  background: #f97316;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+.storefront-shop-button:hover { background: #ea580c; color: #fff; }
+.storefront-banner-slider {
+  position: relative;
+  width: 100%;
+  height: 126px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #243c58;
+}
+.storefront-banner-slide { position: absolute; inset: 0; }
+.storefront-banner-slide img { width: 100%; height: 100%; object-fit: cover; }
+.storefront-banner-arrow, .storefront-banner-pause {
+  position: absolute;
+  z-index: 2;
+  border: 0;
+  color: #fff;
+  background: rgba(15, 23, 42, .85);
+  display: grid;
+  place-items: center;
+}
+.storefront-banner-arrow {
+  top: 50%; transform: translateY(-50%);
+  width: 32px; height: 32px; border-radius: 50%; font-size: 24px; line-height: 1;
+}
+.storefront-banner-prev { left: 8px; }
+.storefront-banner-next { right: 8px; }
+.storefront-banner-pause { right: 8px; bottom: 7px; border-radius: 4px; font-size: 10px; padding: 3px 6px; }
+.storefront-banner-dots { position: absolute; z-index: 2; bottom: 8px; left: 48px; right: 48px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.storefront-banner-dots button { width: 9px; height: 9px; border: 0; border-radius: 50%; padding: 0; background: #fff; }
+.storefront-banner-dots button[aria-pressed="true"] { background: #f97316; }
+.storefront-banner-slider :focus-visible, .storefront-shop-button:focus-visible { outline: 3px solid #f97316; outline-offset: 2px; }
+.home-storefront #featured-products { scroll-margin-top: 90px; }
+.home-storefront .product-card .product-img-wrap { aspect-ratio: 1.55 !important; }
+.home-storefront .product-card .product-body { padding: 10px 12px 12px; flex: 1; display: flex; flex-direction: column; }
+.home-storefront .product-card .product-category { display: none; }
+.home-storefront .product-card .product-name { min-height: 2.7em; margin-bottom: 6px; font-size: .9rem; }
+.home-storefront .product-card .product-price, .home-storefront .product-card .sale-price { color: #ea580c; font-size: 1.1rem; }
+.home-storefront .product-card .btn-add-cart { margin-top: auto; padding: 6px 10px; background: #0754d7; border-radius: 5px; color: #fff; }
+.home-storefront .product-card .btn-add-cart:hover { background: #0644b0; }
+/* Fixed positioning also ships with the release, independent of compiled assets. */
+.recent-order-popup {
+  position: fixed; left: 16px; bottom: max(16px, env(safe-area-inset-bottom));
+  width: min(310px, calc(100vw - 32px)); padding: 12px 14px;
+  border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; color: #0f172a;
+  box-shadow: 0 6px 24px rgba(15,23,42,.14); z-index: 1020;
+}
+.recent-order-popup .btn-close { flex-shrink: 0; padding: 6px; }
+@media (max-width: 767.98px) {
+  .home-storefront .storefront-welcome-grid { grid-template-columns: minmax(0, 1fr); }
+  .home-storefront .storefront-welcome-media { display: none; }
+  .home-storefront .storefront-welcome { padding: 14px 0; }
+  .home-storefront .storefront-welcome-copy p { font-size: .875rem; margin-bottom: 10px; }
+  .home-storefront .product-card .product-img-wrap { aspect-ratio: 1.2 !important; }
+  .home-storefront .product-card .product-body { padding: 8px; }
+  .home-storefront .product-card .product-name { font-size: .8rem !important; }
+  .home-storefront .product-card .btn-add-cart { font-size: .75rem; }
+}

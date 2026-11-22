@@ -28,6 +28,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.scss', 'resources/js/app.js'])
+    <link rel="stylesheet" href="{{ asset('css/storefront-design.css') }}?v={{ filemtime(public_path('css/storefront-design.css')) }}">
     @livewireStyles
     @stack('styles')
 </head>
