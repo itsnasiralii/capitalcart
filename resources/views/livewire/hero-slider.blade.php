@@ -1,4 +1,4 @@
-<div class="hero-circular-slider-container" id="capitalHeroSlider" data-autoplay="{{ $autoplayDuration * 1000 }}" style="position:relative;display:inline-block;width:var(--hero-slider-size,220px);max-width:100%">
+<div class="hero-circular-slider-container" id="capitalHeroSlider" data-autoplay="{{ $autoplayDuration * 1000 }}" style="position:relative;display:inline-block;width:220px;max-width:100%">
     {{-- Concentric Glow Rings (Preserving existing visual layout) --}}
     <div class="glow-ring-outer" style="width:100%;aspect-ratio:1;border-radius:50%;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;margin:0 auto;position:relative">
         <div class="glow-ring-inner" style="width:84%;height:84%;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center">
@@ -11,8 +11,8 @@
                             <a href="{{ is_store_link($slide->link_url) ? $slide->link_url : route('shop') }}" style="display:block;width:100%;height:100%;position:relative">
                                 <img src="{{ $slide->image_url }}" alt="{{ $slide->title }}" decoding="async" onerror="this.onerror=null;this.src='{{ asset('images/hero-fallback.svg') }}'" style="width:100%;height:100%;object-fit:cover;display:block">
                                 {{-- Subtle gradient overlay for text readability if needed --}}
-                                <div class="hero-slide-caption" style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top, rgba(15,23,42,0.8) 0%, transparent 60%);padding:10px 12px 14px;text-align:center">
-                                    <div class="hero-slide-title text-white fw-bold" style="font-size:clamp(0.75rem, 2vw, 0.9rem);line-height:1.2;text-shadow:0 1px 4px rgba(0,0,0,0.6)">{{ $slide->title }}</div>
+                                <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top, rgba(15,23,42,0.8) 0%, transparent 60%);padding:10px 12px 14px;text-align:center">
+                                    <div class="text-white fw-bold" style="font-size:clamp(0.75rem, 2vw, 0.9rem);line-height:1.2;text-shadow:0 1px 4px rgba(0,0,0,0.6)">{{ $slide->title }}</div>
                                     @if($slide->subtitle)
                                         <div class="text-white-50" style="font-size:clamp(0.65rem, 1.5vw, 0.75rem);margin-top:2px">{{ $slide->subtitle }}</div>
                                     @endif
