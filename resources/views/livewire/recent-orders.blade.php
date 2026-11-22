@@ -1,19 +1,29 @@
 <div>
     @if($orders->isNotEmpty())
-        <div class="py-2" style="background:#F8FAFC;border-bottom:1px solid #E2E8F0">
-            <div class="container">
-                <div class="d-flex align-items-center justify-content-center gap-3 overflow-hidden text-center small text-muted flex-wrap">
-                    <span class="badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center gap-1">
-                        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#22C55E"></span> Recent Order Activity
-                    </span>
-                    @php $latest = $orders->first(); @endphp
-                    <div>
-                        <strong class="text-dark">{{ $latest['masked_name'] }}</strong>
-                        <span class="text-muted">({{ $latest['masked_phone'] }})</span> from <strong>{{ $latest['city'] }}</strong> recently placed an order
-                        <span class="text-muted small ms-1">• {{ $latest['time_ago'] }}</span>
-                    </div>
-                </div>
+        @php $latest = $orders->first(); @endphp
+        <aside class="recent-order-popup" role="status" aria-live="polite" aria-atomic="true"
+            x-data="{
+                visible: false, showTimer: null, hideTimer: null,
+                init() {
+                    this.showTimer = setTimeout(() => {
+                        this.visible = true;
+                        this.hideTimer = setTimeout(() => { this.visible = false; }, 6000);
+                    }, 2000);
+                },
+                dismiss() { this.visible = false; clearTimeout(this.showTimer); clearTimeout(this.hideTimer); },
+                destroy() { clearTimeout(this.showTimer); clearTimeout(this.hideTimer); }
+            }"
+            x-show="visible" style="display:none">
+            <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+                <span class="text-success fw-semibold small">Recent Order Activity</span>
+                <button type="button" class="btn-close" aria-label="Dismiss recent order notification" @click="dismiss()"></button>
             </div>
-        </div>
+            <p class="mb-1 small">
+                <strong>{{ $latest['masked_name'] }}</strong>
+                <span class="text-muted">({{ $latest['masked_phone'] }})</span>
+                from <strong>{{ $latest['city'] }}</strong> placed an order.
+            </p>
+            <span class="text-muted small">{{ $latest['time_ago'] }}</span>
+        </aside>
     @endif
 </div>

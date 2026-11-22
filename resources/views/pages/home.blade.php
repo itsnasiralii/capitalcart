@@ -4,16 +4,13 @@
     <section class="hero-section">
         <div class="container">
             <div class="row align-items-center">
-                <div class="col-md-8">
+                <div class="col-12">
                     <h1>Discover <span class="hero-accent">Everyday</span> Essentials</h1>
-                    <p class="mt-2 mb-3">Find your next favourite. Order on WhatsApp, pay on delivery.</p>
+                    <p class="mt-1 mb-2">Order your everyday essentials on WhatsApp. Pay on delivery.</p>
                     <div class="d-flex gap-2 flex-wrap">
                         <a href="{{ route('shop') }}" class="btn px-4" style="background:#F97316;color:#fff;font-weight:600">Shop Now</a>
                         <a href="{{ $featured->isNotEmpty() ? '#featured-products' : route('shop') }}" class="btn btn-outline-light px-4">Explore Products</a>
                     </div>
-                </div>
-                <div class="col-md-4 d-none d-md-block text-center">
-                    <livewire:hero-slider />
                 </div>
             </div>
         </div>
