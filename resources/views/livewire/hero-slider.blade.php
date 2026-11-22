@@ -1,6 +1,6 @@
-<div class="hero-circular-slider-container" id="capitalHeroSlider" data-autoplay="{{ $autoplayDuration * 1000 }}" style="position:relative;display:inline-block;max-width:100%">
+<div class="hero-circular-slider-container" id="capitalHeroSlider" data-autoplay="{{ $autoplayDuration * 1000 }}" style="position:relative;display:inline-block;width:220px;max-width:100%">
     {{-- Concentric Glow Rings (Preserving existing visual layout) --}}
-    <div class="glow-ring-outer" style="width:min(310px,calc(100vw - 48px));aspect-ratio:1;border-radius:50%;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;margin:0 auto;position:relative">
+    <div class="glow-ring-outer" style="width:100%;aspect-ratio:1;border-radius:50%;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;margin:0 auto;position:relative">
         <div class="glow-ring-inner" style="width:84%;height:84%;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center">
 
             {{-- Main Circular Frame --}}
@@ -51,16 +51,6 @@
             @endforeach
         </div>
     @endif
-
-    {{-- Floating Badges --}}
-    <div style="position:absolute;top:5px;right:-12px;background:#fff;border-radius:0.6rem;padding:0.4rem 0.65rem;box-shadow:0 6px 20px rgba(0,0,0,0.18);min-width:110px;text-align:left;z-index:4">
-        <div style="font-size:0.6rem;color:#64748B;text-transform:uppercase;font-weight:600">Today's Deals</div>
-        <div style="font-weight:700;color:#0F172A;font-size:0.75rem">Up to 50% OFF</div>
-    </div>
-    <div style="position:absolute;bottom:15px;left:-12px;background:#fff;border-radius:0.6rem;padding:0.4rem 0.65rem;box-shadow:0 6px 20px rgba(0,0,0,0.18);min-width:110px;text-align:left;z-index:4">
-        <div style="font-size:0.6rem;color:#64748B;text-transform:uppercase;font-weight:600">Free Delivery</div>
-        <div style="font-weight:700;color:#0F172A;font-size:0.75rem">Orders Rs. 2,000+</div>
-    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
