@@ -898,3 +898,37 @@ nav[role="navigation"] svg {
   z-index: 1020;
   .btn-close { flex-shrink: 0; padding: 6px; }
 }
+
+// A small desktop slider beside the copy, outside the hero's height calculation.
+.hero-content-row { position: relative; }
+.hero-side-slider {
+  --hero-slider-size: 112px;
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 112px;
+  padding: 0;
+  line-height: 0;
+  .hero-slide-caption { padding: 4px 5px 8px !important; }
+  .hero-slide-title {
+    font-size: 10px !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .hero-slide-caption .text-white-50, .hero-slide-caption .badge { display: none; }
+  .slider-btn { width: 28px !important; height: 28px !important; }
+  .slider-dots {
+    position: absolute !important;
+    bottom: -8px;
+    left: 0;
+    right: 0;
+    margin-top: 0 !important;
+    gap: 4px !important;
+  }
+}
+@media (min-width: 768px) {
+  .hero-copy { padding-right: 148px; }
+}
