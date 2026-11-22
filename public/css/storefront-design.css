@@ -69,6 +69,22 @@
 .home-storefront .product-card .btn-add-cart { margin-top: auto; padding: 6px 10px; background: #0754d7; border-radius: 5px; color: #fff; }
 .home-storefront .product-card .btn-add-cart:hover { background: #0644b0; }
 /* Fixed positioning also ships with the release, independent of compiled assets. */
+.home-storefront #featured-products .featured-corner-card { position: relative; }
+.home-storefront #featured-products .featured-corner-accent {
+  position: absolute; top: 0; right: 0; width: 84px; height: 84px;
+  pointer-events: none; z-index: 3;
+}
+.featured-corner-accent svg { width: 84px; height: 84px; display: block; }
+.featured-corner-accent path { fill: none; stroke: #facc15; stroke-width: 2; opacity: .3; }
+.featured-corner-dot {
+  position: absolute; left: 0; top: 0; width: 8px; height: 8px;
+  border-radius: 50%; background: #facc15;
+  offset-path: path("M 6 6 H 66 Q 78 6 78 18 V 78");
+  offset-distance: 0%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-storefront #featured-products .featured-corner-accent { display: none; }
+}
 .recent-order-popup {
   position: fixed; left: 16px; bottom: max(16px, env(safe-area-inset-bottom));
   width: min(310px, calc(100vw - 32px)); padding: 12px 14px;
