@@ -3,11 +3,37 @@ window.bootstrap = bootstrap;
 
 function openCartSidebar() {
     const el = document.getElementById('cartSidebar');
-    if (el) bootstrap.Offcanvas.getOrCreateInstance(el).show();
+    if (!el) return;
+    if (!el.classList.contains('show')) {
+        document.querySelectorAll('.offcanvas-backdrop:not(.show)').forEach(b => b.remove());
+    }
+    const instance = bootstrap.Offcanvas.getOrCreateInstance(el);
+    instance.show();
 }
+
+function attachOffcanvasCleanup() {
+    const el = document.getElementById('cartSidebar');
+    if (el && !el._cleanupAttached) {
+        el._cleanupAttached = true;
+        el.addEventListener('hidden.bs.offcanvas', () => {
+            document.querySelectorAll('.offcanvas-backdrop').forEach(b => b.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        });
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachOffcanvasCleanup);
+} else {
+    attachOffcanvasCleanup();
+}
+document.addEventListener('livewire:navigated', attachOffcanvasCleanup);
 
 // Livewire.on registration — works in both livewire:init and livewire:initialized
 document.addEventListener('livewire:init', () => {
+    attachOffcanvasCleanup();
     Livewire.on('open-cart-sidebar', openCartSidebar);
     Livewire.on('show-toast', (data) => {
         const payload = Array.isArray(data) ? data[0] : data;

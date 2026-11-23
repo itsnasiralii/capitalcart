@@ -13,6 +13,23 @@
             </div>
         </div>
     </section>
+
+    {{-- Daraz-Style Quick Category Pills (Mobile Friendly) --}}
+    @if($categories->isNotEmpty())
+        <div class="container py-2 d-lg-none">
+            <div class="d-flex align-items-center gap-2 overflow-x-auto pb-2" style="scrollbar-width:none;-webkit-overflow-scrolling:touch;">
+                <a href="{{ route('shop') }}" class="btn btn-sm rounded-pill text-nowrap px-3 {{ !request('category') ? 'btn-primary' : 'btn-light border' }}" style="font-size:0.8rem">
+                    All
+                </a>
+                @foreach($categories as $cat)
+                    <a href="{{ route('shop', ['category' => $cat->slug]) }}" class="btn btn-sm btn-light border rounded-pill text-nowrap px-3 text-secondary" style="font-size:0.8rem">
+                        {{ $cat->name }}
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- Featured Products --}}
     @if($featured->isNotEmpty())
         <section id="featured-products" class="py-4" style="background:#fff">

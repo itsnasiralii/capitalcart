@@ -35,7 +35,7 @@
 <body class="{{ request()->routeIs('portfolio') ? 'portfolio-mode' : '' }}" style="{{ request()->routeIs('portfolio') ? 'background-color: #070B14 !important; color: #E2E8F0 !important;' : '' }}">
 
 {{-- Navbar --}}
-<nav class="navbar navbar-marketory navbar-expand-lg sticky-top">
+<nav class="navbar navbar-marketory navbar-expand-lg sticky-top" data-bs-theme="dark">
     <div class="container">
         <a class="navbar-brand d-inline-flex align-items-center gap-2" href="{{ route('home') }}">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -45,9 +45,15 @@
             </svg>
             <span>Capital<span style="color:#F97316">Cart</span><span class="small" style="font-size:0.75rem;opacity:0.85">.pk</span></span>
         </a>
-        <button class="navbar-toggler" type="button" aria-label="Toggle navigation" aria-controls="navMenu" aria-expanded="false" data-bs-toggle="collapse" data-bs-target="#navMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+        <div class="d-flex align-items-center gap-1 d-lg-none">
+            <button class="navbar-toggler border-0 p-2 text-white shadow-none" type="button" aria-label="Toggle navigation" aria-controls="navMenu" aria-expanded="false" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+        </div>
         <div class="collapse navbar-collapse" id="navMenu">
             <ul class="navbar-nav me-auto ms-3 gap-1 align-items-lg-center">
                 <li class="nav-item">
@@ -80,6 +86,17 @@
                     <a class="nav-link {{ request()->boolean('onSale') ? 'active' : '' }}" href="{{ route('shop', ['onSale' => 1]) }}">Deals</a>
                 </li>
             </ul>
+            {{-- Mobile Search inside menu --}}
+            <form action="{{ route('shop') }}" method="GET" class="d-lg-none my-3">
+                <div class="input-group">
+                    <input type="text" name="search" aria-label="Search products" value="{{ request('search') }}" class="form-control bg-dark text-white border-secondary" placeholder="Search products..." style="font-size:0.875rem; border-radius: 8px 0 0 8px;">
+                    <button class="btn btn-accent text-white px-3" type="submit" aria-label="Search" style="background:#F97316; border-radius: 0 8px 8px 0;">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </button>
+                </div>
+            </form>
             <div class="d-flex align-items-center gap-3">
                 {{-- Live Visitor Counter --}}
                 @if(setting('show_visitor_counter', 1))
@@ -185,6 +202,66 @@
         <span class="small"><a href="{{ route('home') }}" class="text-decoration-none fw-semibold" style="color: #00F2FE;">&larr; Back to CapitalCart.pk Store</a> &bull; Islamabad, Pakistan</span>
     </div>
 </footer>
+@endif
+
+{{-- Mobile Bottom Navigation Bar (Daraz-inspired) --}}
+@if(!request()->routeIs('portfolio'))
+<nav class="mobile-bottom-nav d-lg-none" aria-label="Mobile Navigation">
+    <a href="{{ route('home') }}" class="mobile-nav-item {{ request()->routeIs('home') ? 'active' : '' }}">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        <span>Home</span>
+    </a>
+    <a href="{{ route('shop') }}" class="mobile-nav-item {{ request()->routeIs('shop') && !request('onSale') && !request('category') ? 'active' : '' }}">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+        </svg>
+        <span>Categories</span>
+    </a>
+    <a href="{{ route('shop', ['onSale' => 1]) }}" class="mobile-nav-item {{ request()->boolean('onSale') ? 'active' : '' }}">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/>
+        </svg>
+        <span>Deals</span>
+    </a>
+    <a href="#" class="mobile-nav-item" data-bs-toggle="offcanvas" data-bs-target="#cartSidebar">
+        <div class="position-relative d-inline-block">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+        </div>
+        <span>Cart</span>
+    </a>
+    @auth
+        @if(auth()->user()->is_admin)
+            <a href="{{ route('admin.dashboard') }}" class="mobile-nav-item {{ request()->routeIs('admin.*') ? 'active' : '' }}">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <span>Admin</span>
+            </a>
+        @else
+            <a href="{{ route('wishlist') }}" class="mobile-nav-item {{ request()->routeIs('wishlist') ? 'active' : '' }}">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                </svg>
+                <span>Wishlist</span>
+            </a>
+        @endif
+    @else
+        <a href="{{ route('login') }}" class="mobile-nav-item {{ request()->routeIs('login') ? 'active' : '' }}">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+            <span>Login</span>
+        </a>
+    @endauth
+</nav>
 @endif
 
 @livewireScripts

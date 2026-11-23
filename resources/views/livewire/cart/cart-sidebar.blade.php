@@ -1,4 +1,4 @@
-<div class="offcanvas offcanvas-end offcanvas-cart" tabindex="-1" id="cartSidebar" aria-labelledby="cartSidebarLabel">
+<div class="offcanvas offcanvas-end offcanvas-cart" tabindex="-1" id="cartSidebar" aria-labelledby="cartSidebarLabel" wire:ignore.self>
     <div class="offcanvas-header border-bottom py-3">
         <h5 class="offcanvas-title font-poppins fw-bold" id="cartSidebarLabel">
             Shopping Cart
