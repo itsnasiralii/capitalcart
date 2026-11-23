@@ -147,7 +147,7 @@
         </div>
         @if($this->orders->hasPages())
             <div class="p-3 border-top">
-                {{ $this->orders->links() }}
+                {{ $this->orders->links('components.custom-pagination') }}
             </div>
         @endif
     </div>

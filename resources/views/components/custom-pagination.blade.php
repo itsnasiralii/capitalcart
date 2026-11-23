@@ -29,7 +29,7 @@
                     <span class="fw-semibold">{{ $paginator->lastItem() ?? 0 }}</span>
                     of
                     <span class="fw-semibold">{{ $paginator->total() }}</span>
-                    products
+                    results
                 </p>
             </div>
 
