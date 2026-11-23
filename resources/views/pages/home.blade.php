@@ -4,7 +4,7 @@
     <section class="storefront-welcome" aria-label="Welcome to Capital Cart">
         <div class="container storefront-welcome-grid">
             <div class="storefront-welcome-copy">
-                <h1>Shop Everyday Essentials</h1>
+                <h1>Shop Everyday Essentials <span style="color: #F97316;">— B2B &amp; Wholesale</span></h1>
                 <p>Order on WhatsApp. Pay on delivery.</p>
                 <a href="{{ route('shop') }}" class="storefront-shop-button">Shop Now</a>
             </div>
