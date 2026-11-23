@@ -50,7 +50,15 @@
                                         <span class="badge-sale">-{{ $product->discount_percent }}%</span>
                                     @endif
                                     <span class="badge-featured">Featured</span>
-                                    <img src="{{ $product->primary_image_url }}" alt="{{ $product->name }}" loading="lazy"
+                                    <img src="{{ $product->primary_image_url }}" alt="{{ $product->name }}"
+                                         @if($loop->iteration <= 2)
+                                             fetchpriority="high"
+                                             loading="eager"
+                                         @else
+                                             loading="lazy"
+                                         @endif
+                                         width="300" height="300"
+                                         decoding="async"
                                          onerror="this.onerror=null;this.src='https://placehold.co/600x600/f1f5f9/94a3b8?text={{ rawurlencode($product->name) }}'">
                                 </a>
                                 <div class="product-body d-flex flex-column">

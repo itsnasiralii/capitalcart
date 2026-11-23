@@ -141,7 +141,7 @@
         .product-card .product-category {
             font-size: 0.7rem !important;
             font-weight: 600 !important;
-            color: #3B82F6 !important;
+            color: #1D4ED8 !important;
             text-transform: uppercase !important;
             letter-spacing: 0.06em !important;
             margin-bottom: 0.25rem !important;
