@@ -85,4 +85,24 @@ class SitemapAndSeoTest extends TestCase
         $response->assertSee('"@type": "BreadcrumbList"', false);
         $response->assertSee('CapitalCart');
     }
+
+    public function test_homepage_contains_favicons_and_seo_footer(): void
+    {
+        $response = $this->get('/');
+
+        $response->assertStatus(200);
+        $response->assertSee('favicon.svg');
+        $response->assertSee('favicon-48x48.png');
+        $response->assertSee('apple-touch-icon.png');
+        $response->assertSee('favicon.ico');
+
+        // Check SEO Footer Headings
+        $response->assertSee('Categories');
+        $response->assertSee('Customer Care');
+        $response->assertSee('B2B &amp; Wholesale', false);
+        $response->assertSee('Stay Updated');
+        $response->assertSee('Nationwide Delivery');
+        $response->assertSee('Cash on Delivery');
+        $response->assertSee('CapitalCart.pk — Online Shopping &amp; B2B Wholesale Destination in Pakistan', false);
+    }
 }

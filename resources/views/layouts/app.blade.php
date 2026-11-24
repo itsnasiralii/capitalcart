@@ -95,7 +95,14 @@
     {!! json_encode($schemaGraph, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) !!}
     </script>
 
-    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <!-- Favicon & Touch Icons -->
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="icon" type="image/png" sizes="48x48" href="{{ asset('favicon-48x48.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ asset('favicon-96x96.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
@@ -229,38 +236,141 @@
 
 {{-- Footer --}}
 @if(!request()->routeIs('portfolio'))
-<footer class="footer mt-5">
+{{-- Trust Badges Strip (Daraz / Shopify style) --}}
+<section class="footer-features py-4" style="background:#080D1A;border-top:1px solid rgba(255,255,255,0.08);border-bottom:1px solid rgba(255,255,255,0.06);">
+    <div class="container">
+        <div class="row g-3 text-white">
+            <div class="col-6 col-md-3 d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;background:rgba(249,115,22,0.15);color:#F97316;">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
+                </div>
+                <div>
+                    <h6 class="mb-0 fw-bold" style="font-size:0.875rem">Nationwide Delivery</h6>
+                    <small class="text-white-50" style="font-size:0.75rem">Fast shipping across Pakistan</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;background:rgba(249,115,22,0.15);color:#F97316;">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                </div>
+                <div>
+                    <h6 class="mb-0 fw-bold" style="font-size:0.875rem">Cash on Delivery</h6>
+                    <small class="text-white-50" style="font-size:0.75rem">Pay at your doorstep (COD)</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;background:rgba(249,115,22,0.15);color:#F97316;">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                </div>
+                <div>
+                    <h6 class="mb-0 fw-bold" style="font-size:0.875rem">Quality Assurance</h6>
+                    <small class="text-white-50" style="font-size:0.75rem">100% verified authentic goods</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;background:rgba(249,115,22,0.15);color:#F97316;">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                </div>
+                <div>
+                    <h6 class="mb-0 fw-bold" style="font-size:0.875rem">WhatsApp Support</h6>
+                    <small class="text-white-50" style="font-size:0.75rem">Fast help on order inquiries</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer class="footer mt-0">
     <div class="container">
         <div class="row g-4">
-            <div class="col-lg-4">
-                <h5 class="d-inline-flex align-items-center gap-2">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            {{-- Col 1: Brand & Contact Info --}}
+            <div class="col-lg-3 col-md-6">
+                <h5 class="d-inline-flex align-items-center gap-2 mb-3">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="9" cy="21" r="1"></circle>
                         <circle cx="20" cy="21" r="1"></circle>
                         <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
                     </svg>
                     Capital<span style="color:#F97316">Cart</span><span class="small" style="font-size:0.75rem;opacity:0.85">.pk</span>
                 </h5>
-                <p class="small" style="color:rgba(255,255,255,0.55)">Islamabad’s Smart Shopping Destination. Quality products, fast delivery, and exceptional service across Pakistan.</p>
+                <p class="small text-white-50 mb-3" style="line-height:1.6">
+                    Islamabad’s Smart Shopping Destination &amp; B2B Wholesale Platform. Curating premium kitchen gadgets, home utilities, and smart lifestyle products across Pakistan.
+                </p>
+                <div class="small text-white-50 d-flex flex-column gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <svg width="15" height="15" fill="none" stroke="#F97316" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span>Islamabad, ICT, Pakistan</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <svg width="15" height="15" fill="none" stroke="#F97316" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', setting('whatsapp_number', '+923002922584')) }}" target="_blank" rel="noopener" class="text-white-50 text-decoration-none">WhatsApp Helpline</a>
+                    </div>
+                </div>
             </div>
+
+            {{-- Col 2: Categories (SEO Internal Links) --}}
             <div class="col-lg-2 col-6">
-                <h5>Shop</h5>
-                @foreach(\App\Models\Category::active()->orderBy('sort_order')->limit(5)->get() as $cat)
+                <h5>Categories</h5>
+                @foreach(\App\Models\Category::active()->orderBy('sort_order')->limit(6)->get() as $cat)
                     <a href="{{ route('shop', ['category' => $cat->slug]) }}">{{ $cat->name }}</a>
                 @endforeach
+                <a href="{{ route('shop') }}" class="fw-semibold" style="color:#F97316">All Categories &rarr;</a>
             </div>
+
+            {{-- Col 3: Customer Care & Policies --}}
             <div class="col-lg-2 col-6">
-                <h5>Account</h5>
-                <a href="{{ route('login') }}">Sign In</a>
-                <a href="{{ route('register') }}">Register</a>
-                <a href="{{ route('cart') }}">Your Cart</a>
+                <h5>Customer Care</h5>
+                <a href="{{ route('ordering') }}">Ordering &amp; Payment</a>
+                <a href="{{ route('ordering') }}#cod">Cash on Delivery (COD)</a>
+                <a href="{{ route('privacy') }}">Privacy &amp; Data Policy</a>
+                <a href="{{ route('cart') }}">Shopping Cart</a>
+                <a href="{{ route('wishlist') }}">My Wishlist</a>
+                <a href="{{ route('portfolio') }}#contact">Contact &amp; Support</a>
             </div>
-            <div class="col-lg-4">
-                <h5>Newsletter</h5>
-                <p class="small" style="color:rgba(255,255,255,0.55)">Get exclusive deals and updates straight to your inbox.</p>
+
+            {{-- Col 4: Wholesale & Account --}}
+            <div class="col-lg-2 col-6">
+                <h5>B2B &amp; Wholesale</h5>
+                <a href="{{ route('shop', ['onSale' => 1]) }}">Deals &amp; Clearance</a>
+                <a href="{{ route('shop') }}?b2b=1">Bulk Wholesale Supply</a>
+                <a href="{{ route('login') }}">Customer Sign In</a>
+                <a href="{{ route('register') }}">Create Account</a>
+                <a href="{{ route('portfolio') }}" class="fw-semibold" style="color:#F97316">★ About Developer</a>
+            </div>
+
+            {{-- Col 5: Newsletter & Badges --}}
+            <div class="col-lg-3 col-6">
+                <h5>Stay Updated</h5>
+                <p class="small text-white-50 mb-3">Get exclusive wholesale prices &amp; flash deal alerts straight to your inbox.</p>
                 <livewire:newsletter-box />
+                <div class="pt-3">
+                    <span class="d-block text-white-50 small mb-1" style="font-size:0.72rem">Accepted Payment Methods:</span>
+                    <div class="d-flex flex-wrap gap-1.5 align-items-center">
+                        <span class="badge bg-secondary-subtle text-light border border-secondary" style="font-size:0.65rem">Cash on Delivery</span>
+                        <span class="badge bg-secondary-subtle text-light border border-secondary" style="font-size:0.65rem">JazzCash</span>
+                        <span class="badge bg-secondary-subtle text-light border border-secondary" style="font-size:0.65rem">EasyPaisa</span>
+                    </div>
+                </div>
             </div>
         </div>
+
+        {{-- SEO Entity Knowledge Graph & Regional Authority Text Block --}}
+        <div class="footer-seo-content pt-4 mt-4 border-top border-secondary-subtle" style="border-color:rgba(255,255,255,0.08) !important;">
+            <h6 class="text-white-50 text-uppercase fw-bold mb-2" style="font-size:0.78rem;letter-spacing:0.05em">
+                CapitalCart.pk — Online Shopping &amp; B2B Wholesale Destination in Pakistan
+            </h6>
+            <p class="text-white-50 small mb-2" style="line-height:1.65;font-size:0.75rem;">
+                CapitalCart.pk is Pakistan’s leading online store and B2B wholesale platform based in Islamabad. We bring you curated daily essentials, viral kitchen gadgets, home improvement tools, bathroom accessories, and smart household organizers at unmatchable factory and wholesale rates. Enjoy seamless Cash on Delivery (COD) and fast shipping to Islamabad, Rawalpindi, Lahore, Karachi, Peshawar, Multan, Faisalabad, Gujranwala, Sialkot, Quetta, and across all cities in Pakistan.
+            </p>
+            <div class="footer-seo-tags d-flex flex-wrap gap-2 pt-1">
+                <span class="badge bg-dark border border-secondary text-white-50" style="font-size:0.68rem">Kitchen Gadgets Pakistan</span>
+                <span class="badge bg-dark border border-secondary text-white-50" style="font-size:0.68rem">Home Essentials Islamabad</span>
+                <span class="badge bg-dark border border-secondary text-white-50" style="font-size:0.68rem">B2B Wholesale Online</span>
+                <span class="badge bg-dark border border-secondary text-white-50" style="font-size:0.68rem">Cash on Delivery Store</span>
+                <span class="badge bg-dark border border-secondary text-white-50" style="font-size:0.68rem">Household Utilities PK</span>
+            </div>
+        </div>
+
         <div class="footer-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span>&copy; {{ date('Y') }} CapitalCart.pk. All rights reserved.</span>
             <span>Islamabad’s Smart Shopping Destination</span>
