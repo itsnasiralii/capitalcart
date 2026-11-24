@@ -1,4 +1,4 @@
-<x-layouts.app title="Order status">
+<x-layouts.app title="Order status" robots="noindex, nofollow">
 
     <div class="container py-5">
         <div class="text-center py-4 my-2">

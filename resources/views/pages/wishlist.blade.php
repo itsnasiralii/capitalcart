@@ -1,4 +1,4 @@
-<x-layouts.app title="My Wishlist">
+<x-layouts.app title="My Wishlist" robots="noindex, follow">
 
     <div class="py-4" style="background:#fff;border-bottom:1px solid #E5E7EB">
         <div class="container">

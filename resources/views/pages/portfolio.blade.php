@@ -18,7 +18,7 @@
     $categories   = $projects->pluck('category')->unique()->values();
 @endphp
 
-<x-layouts.app :title="$name . ' — ' . $title">
+<x-layouts.app :title="$name . ' — ' . $title" :description="$name . ' — ' . $title . ' based in Islamabad, Pakistan. Specializing in corporate NOC engineering, enterprise Linux, and full-stack software development.'">
 
 @push('styles')
 <style>

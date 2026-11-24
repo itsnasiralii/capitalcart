@@ -4,24 +4,96 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ?? config('app.name') }} | CapitalCart.pk</title>
-    <meta name="description" content="{{ $description ?? 'CapitalCart.pk — Islamabad’s Smart Shopping Destination. Quality products, fast delivery across Pakistan.' }}">
+    <title>{{ str_contains($title ?? '', 'CapitalCart') ? $title : (($title ? $title . ' | ' : '') . 'CapitalCart.pk — Everyday Essentials & B2B Wholesale in Pakistan') }}</title>
+    <meta name="description" content="{{ $description ?? 'CapitalCart.pk is Pakistan’s trusted online store and B2B wholesale platform in Islamabad. Shop trending kitchen gadgets, home essentials, and daily utility goods with fast delivery across Pakistan.' }}">
     <link rel="canonical" href="{{ url()->current() }}">
-    <meta name="robots" content="index, follow">
+    <meta name="robots" content="{{ $robots ?? 'index, follow' }}">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
+    <meta property="og:site_name" content="CapitalCart.pk">
+    <meta property="og:locale" content="en_PK">
     <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:title" content="{{ $title ?? config('app.name') }} | CapitalCart.pk">
-    <meta property="og:description" content="{{ $description ?? 'CapitalCart.pk — Islamabad’s Smart Shopping Destination. Quality products, fast delivery across Pakistan.' }}">
-    <meta property="og:image" content="{{ asset('images/hero-fallback.svg') }}">
+    <meta property="og:title" content="{{ str_contains($title ?? '', 'CapitalCart') ? $title : (($title ? $title . ' | ' : '') . 'CapitalCart.pk — Everyday Essentials & B2B Wholesale') }}">
+    <meta property="og:description" content="{{ $description ?? 'CapitalCart.pk is Pakistan’s trusted online store and B2B wholesale platform in Islamabad. Shop trending kitchen gadgets, home essentials, and daily utility goods.' }}">
+    <meta property="og:image" content="{{ $ogImage ?? asset('images/hero-fallback.svg') }}">
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@capitalcartpk">
     <meta name="twitter:url" content="{{ url()->current() }}">
-    <meta name="twitter:title" content="{{ $title ?? config('app.name') }} | CapitalCart.pk">
-    <meta name="twitter:description" content="{{ $description ?? 'CapitalCart.pk — Islamabad’s Smart Shopping Destination. Quality products, fast delivery across Pakistan.' }}">
-    <meta name="twitter:image" content="{{ asset('images/hero-fallback.svg') }}">
+    <meta name="twitter:title" content="{{ str_contains($title ?? '', 'CapitalCart') ? $title : (($title ? $title . ' | ' : '') . 'CapitalCart.pk — Everyday Essentials & B2B Wholesale') }}">
+    <meta name="twitter:description" content="{{ $description ?? 'CapitalCart.pk is Pakistan’s trusted online store and B2B wholesale platform in Islamabad. Shop trending kitchen gadgets, home essentials, and daily utility goods.' }}">
+    <meta name="twitter:image" content="{{ $ogImage ?? asset('images/hero-fallback.svg') }}">
+
+    {{-- Schema.org JSON-LD: Official OnlineStore & WebSite Knowledge Graph for Google & AI Overviews --}}
+    @php
+        $schemaGraph = [
+            '@context' => 'https://schema.org',
+            '@graph' => [
+                [
+                    '@type' => 'OnlineStore',
+                    '@id' => url('/') . '/#store',
+                    'name' => 'CapitalCart.pk',
+                    'alternateName' => [
+                        'CapitalCart',
+                        'Capital Cart',
+                        'Capital Cart Pakistan',
+                        'CapitalCart PK',
+                    ],
+                    'url' => url('/'),
+                    'logo' => [
+                        '@type' => 'ImageObject',
+                        'url' => asset('images/hero-fallback.svg'),
+                        'caption' => 'CapitalCart.pk',
+                    ],
+                    'image' => asset('images/hero-fallback.svg'),
+                    'description' => 'CapitalCart.pk is an online store and B2B wholesale supplier based in Islamabad, Pakistan, specializing in high-demand household essentials, kitchen gadgets, electronics, and daily utility products.',
+                    'telephone' => setting('whatsapp_number', '+923000000000'),
+                    'priceRange' => 'PKR',
+                    'currenciesAccepted' => 'PKR',
+                    'paymentAccepted' => 'Cash on Delivery',
+                    'areaServed' => [
+                        '@type' => 'Country',
+                        'name' => 'Pakistan',
+                    ],
+                    'address' => [
+                        '@type' => 'PostalAddress',
+                        'addressLocality' => 'Islamabad',
+                        'addressRegion' => 'Islamabad Capital Territory',
+                        'addressCountry' => 'PK',
+                    ],
+                    'sameAs' => [
+                        'https://www.facebook.com/capitalcartofficial',
+                        'https://www.instagram.com/capitalcart.pk',
+                    ],
+                ],
+                [
+                    '@type' => 'WebSite',
+                    '@id' => url('/') . '/#website',
+                    'url' => url('/'),
+                    'name' => 'CapitalCart.pk',
+                    'alternateName' => 'CapitalCart',
+                    'description' => "Pakistan's Online Store for Everyday Essentials & B2B Wholesale",
+                    'publisher' => [
+                        '@id' => url('/') . '/#store',
+                    ],
+                    'inLanguage' => 'en-PK',
+                    'potentialAction' => [
+                        '@type' => 'SearchAction',
+                        'target' => [
+                            '@type' => 'EntryPoint',
+                            'urlTemplate' => url('/shop') . '?search={search_term_string}',
+                        ],
+                        'query-input' => 'required name=search_term_string',
+                    ],
+                ],
+            ],
+        ];
+    @endphp
+    <script type="application/ld+json">
+    {!! json_encode($schemaGraph, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) !!}
+    </script>
 
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -236,7 +308,7 @@
         </div>
         <span>Cart</span>
     </a>
-    @auth
+    @if(auth()->check())
         @if(auth()->user()->is_admin)
             <a href="{{ route('admin.dashboard') }}" class="mobile-nav-item {{ request()->routeIs('admin.*') ? 'active' : '' }}">
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -260,7 +332,7 @@
             </svg>
             <span>Login</span>
         </a>
-    @endauth
+    @endif
 </nav>
 @endif
 

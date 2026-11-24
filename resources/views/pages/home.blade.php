@@ -1,4 +1,4 @@
-<x-layouts.app title="Home — Modern Online Store">
+<x-layouts.app title="CapitalCart.pk — Everyday Essentials &amp; B2B Wholesale in Pakistan" description="CapitalCart.pk is Islamabad’s smart online shopping destination and B2B wholesale platform. Shop trending kitchen gadgets, home essentials, and daily utility products with fast delivery across Pakistan.">
 
     <div class="home-storefront">
     <section class="storefront-welcome" aria-label="Welcome to Capital Cart">

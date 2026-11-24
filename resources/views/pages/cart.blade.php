@@ -1,4 +1,4 @@
-<x-layouts.app title="Cart">
+<x-layouts.app title="Your Shopping Cart" robots="noindex, follow">
 
     <div class="py-3" style="background:#fff;border-bottom:1px solid #E5E7EB">
         <div class="container">

@@ -1,4 +1,4 @@
-<x-layouts.app title="Login">
+<x-layouts.app title="Login" robots="noindex, follow">
 
     <div class="container py-5">
         <div class="row justify-content-center">

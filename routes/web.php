@@ -28,6 +28,16 @@ Route::get('/product-images/{image}', function (ProductImage $image) {
     ]);
 })->name('product-images.show');
 
+Route::get('/sitemap.xml', function () {
+    $products = Product::active()->select('slug', 'updated_at')->get();
+    $categories = \App\Models\Category::active()->select('slug', 'updated_at')->get();
+
+    return response()
+        ->view('sitemap', compact('products', 'categories'))
+        ->header('Content-Type', 'application/xml; charset=utf-8')
+        ->header('Cache-Control', 'public, max-age=21600');
+})->name('sitemap');
+
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/shop', function () {

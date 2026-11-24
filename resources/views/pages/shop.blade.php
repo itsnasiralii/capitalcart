@@ -1,4 +1,4 @@
-<x-layouts.app title="Shop">
+<x-layouts.app title="Shop All Products — Kitchen, Home &amp; Daily Essentials" description="Explore trending household essentials, kitchen tools, and smart gadgets at CapitalCart.pk. Fast delivery, wholesale discounts, and cash on delivery across Pakistan.">
 
     <div class="py-4" style="background:#fff;border-bottom:1px solid #E5E7EB">
         <div class="container">
@@ -15,5 +15,31 @@
     <div class="container py-5">
         <livewire:shop.product-catalog />
     </div>
+
+    @push('scripts')
+    @php
+        $shopBreadcrumbs = [
+            '@context' => 'https://schema.org',
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => [
+                [
+                    '@type' => 'ListItem',
+                    'position' => 1,
+                    'name' => 'Home',
+                    'item' => route('home'),
+                ],
+                [
+                    '@type' => 'ListItem',
+                    'position' => 2,
+                    'name' => 'Shop',
+                    'item' => route('shop'),
+                ],
+            ],
+        ];
+    @endphp
+    <script type="application/ld+json">
+    {!! json_encode($shopBreadcrumbs, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) !!}
+    </script>
+    @endpush
 
 </x-layouts.app>
