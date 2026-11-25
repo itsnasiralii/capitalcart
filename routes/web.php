@@ -80,6 +80,9 @@ Route::get('/order-confirmation/{orderNumber}/whatsapp', function (string $order
 })->name('order.whatsapp');
 
 Route::get('/portfolio', function () {
+    if (!setting('show_developer_link', 1) && !auth()->user()?->is_admin) {
+        return redirect()->route('home');
+    }
     return view('pages.portfolio');
 })->name('portfolio');
 
@@ -175,5 +178,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/orders/{id}', \App\Livewire\Admin\Orders\OrderDetail::class)->name('orders.show');
     Route::get('/newsletter', \App\Livewire\Admin\Newsletter\SubscriberList::class)->name('newsletter.index');
     Route::get('/portfolio', \App\Livewire\Admin\Portfolio\PortfolioManager::class)->name('portfolio.index');
+    Route::get('/users', \App\Livewire\Admin\Users\UserManager::class)->name('users.index');
     Route::get('/settings', \App\Livewire\Admin\Settings\StoreSettings::class)->name('settings.index');
 });

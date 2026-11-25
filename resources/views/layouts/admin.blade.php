@@ -76,6 +76,14 @@
             </a>
         </div>
 
+        <div class="nav-section-title">Administration</div>
+        <div class="nav-item">
+            <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 6c1.4 0 2.5 1.1 2.5 2.5S13.4 12 12 12s-2.5-1.1-2.5-2.5S10.6 7 12 7zm0 10.9c-2.3 0-4.3-1.1-5.5-2.8.03-1.8 3.7-2.8 5.5-2.8s5.47 1 5.5 2.8c-1.2 1.7-3.2 2.8-5.5 2.8z"/></svg>
+                Admin Staff &amp; Roles
+            </a>
+        </div>
+
         <div class="nav-section-title">Configuration</div>
         <div class="nav-item">
             <a href="{{ route('admin.settings.index') }}" class="{{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">

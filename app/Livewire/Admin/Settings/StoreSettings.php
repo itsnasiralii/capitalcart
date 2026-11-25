@@ -12,6 +12,7 @@ class StoreSettings extends Component
     public string $whatsapp_number = '';
     public bool $show_visitor_counter = true;
     public bool $show_recent_orders = true;
+    public bool $show_developer_link = true;
     public int $shipping_cost = 200;
     public int $free_shipping_threshold = 2000;
     public int $slider_autoplay_duration = 5;
@@ -25,6 +26,7 @@ class StoreSettings extends Component
         $this->whatsapp_number          = Setting::get('whatsapp_number', '03002922584');
         $this->show_visitor_counter      = (bool) Setting::get('show_visitor_counter', 1);
         $this->show_recent_orders        = (bool) Setting::get('show_recent_orders', 1);
+        $this->show_developer_link       = (bool) Setting::get('show_developer_link', 1);
         $this->shipping_cost             = (int) Setting::get('shipping_cost', 200);
         $this->free_shipping_threshold   = (int) Setting::get('free_shipping_threshold', 2000);
         $this->slider_autoplay_duration  = (int) Setting::get('slider_autoplay_duration', 5);
@@ -46,6 +48,7 @@ class StoreSettings extends Component
             'whatsapp_number'         => 'required|string',
             'show_visitor_counter'     => 'boolean',
             'show_recent_orders'       => 'boolean',
+            'show_developer_link'      => 'boolean',
             'shipping_cost'            => 'required|integer|min:0|max:10000',
             'free_shipping_threshold'  => 'required|integer|min:0|max:100000',
             'slider_autoplay_duration' => 'required|integer|min:2|max:30',
@@ -61,6 +64,7 @@ class StoreSettings extends Component
         Setting::set('whatsapp_number', $normalizedNumber, 'whatsapp');
         Setting::set('show_visitor_counter', $this->show_visitor_counter ? '1' : '0', 'storefront');
         Setting::set('show_recent_orders', $this->show_recent_orders ? '1' : '0', 'storefront');
+        Setting::set('show_developer_link', $this->show_developer_link ? '1' : '0', 'storefront');
         Setting::set('shipping_cost', (string) $this->shipping_cost, 'shipping');
         Setting::set('free_shipping_threshold', (string) $this->free_shipping_threshold, 'shipping');
         Setting::set('slider_autoplay_duration', (string) $this->slider_autoplay_duration, 'storefront');

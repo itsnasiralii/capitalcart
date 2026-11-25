@@ -106,6 +106,14 @@
                             </label>
                         </div>
 
+                        <div class="form-check form-switch mb-4">
+                            <input type="checkbox" wire:model="show_developer_link" class="form-check-input" id="devLinkSwitch">
+                            <label class="form-check-label fw-semibold" for="devLinkSwitch">
+                                Show "About Developer" Portfolio on Storefront
+                                <small class="text-muted d-block fw-normal">When switched off, the "About Dev" button in the header navbar and the footer developer link are completely hidden from the storefront.</small>
+                            </label>
+                        </div>
+
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Hero Slider Autoplay Interval (Seconds) <span class="text-danger">*</span></label>
                             <input type="number" wire:model="slider_autoplay_duration" class="form-control @error('slider_autoplay_duration') is-invalid @enderror" min="2" max="30">

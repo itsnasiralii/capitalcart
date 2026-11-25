@@ -246,11 +246,13 @@
                 <li class="nav-item">
                     <a class="nav-link {{ request()->boolean('onSale') ? 'active' : '' }}" href="{{ route('shop', ['onSale' => 1]) }}">Deals</a>
                 </li>
+                @if(setting('show_developer_link', 1))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('portfolio') ? 'active' : '' }}" href="{{ route('portfolio') }}">
                         <span class="badge rounded-pill me-1" style="background:#F97316;color:#fff;font-size:0.65rem">Dev</span>About Dev<span class="d-none d-xxl-inline">eloper</span>
                     </a>
                 </li>
+                @endif
             </ul>
             {{-- Mobile Search inside menu --}}
             <form action="{{ route('shop') }}" method="GET" class="d-lg-none my-3" role="search">
@@ -441,7 +443,9 @@
                 <a href="{{ route('shop') }}?b2b=1">Bulk Wholesale Supply</a>
                 <a href="{{ route('login') }}">Customer Sign In</a>
                 <a href="{{ route('register') }}">Create Account</a>
+                @if(setting('show_developer_link', 1))
                 <a href="{{ route('portfolio') }}" class="fw-semibold" style="color:#F97316">★ About Developer</a>
+                @endif
             </div>
 
             {{-- Col 5: Newsletter & Badges --}}
