@@ -49,12 +49,18 @@
                 </select>
             </div>
             <div class="col-3 col-md-1">
-                <button wire:click="$set('search', ''); $set('category', ''); $set('stock', '')" class="btn btn-outline-secondary w-100" title="Reset Filters">↺</button>
+                <button wire:click="resetFilters" class="btn btn-outline-secondary w-100" title="Reset Filters">↺</button>
             </div>
         </div>
     </div>
 
     <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
+        <label for="admin-products-status" class="small fw-semibold mb-0">Status</label>
+        <select id="admin-products-status" wire:model.live="status" class="form-select form-select-sm w-auto me-sm-3">
+            <option value="">All products</option>
+            <option value="enabled">Enabled only</option>
+            <option value="disabled">Disabled only</option>
+        </select>
         <label for="admin-products-per-page" class="small fw-semibold mb-0">Products per page</label>
         <select id="admin-products-per-page" wire:model.live="perPage" class="form-select form-select-sm w-auto"
                 wire:loading.attr="disabled" wire:target="perPage">
@@ -62,7 +68,7 @@
                 <option value="{{ $size }}">{{ $size }}</option>
             @endforeach
         </select>
-        <span wire:loading wire:target="perPage" class="small text-muted" role="status">Loading products...</span>
+        <span wire:loading.delay wire:target="perPage,status,search,category,stock,sort,resetFilters" class="small text-muted" role="status">Loading products...</span>
     </div>
 
     {{-- Bulk Import Modal --}}
@@ -169,9 +175,9 @@
         {{-- Mobile Cards View (Below md breakpoint) --}}
         <div class="d-md-none">
             @forelse($this->products as $product)
-                <div class="p-3 border-bottom">
+                <div class="p-3 border-bottom" wire:key="product-mobile-{{ $product->id }}">
                     <div class="d-flex align-items-start gap-3 mb-2">
-                        <img src="{{ $product->primary_image_url }}" alt="{{ $product->name }}" style="width:52px;height:52px;object-fit:cover;border-radius:0.5rem;flex-shrink:0" onerror="this.onerror=null;this.src='https://placehold.co/100x100/f1f5f9/94a3b8?text=Product'">
+                        <img src="{{ $product->primaryImage?->image_url ?? asset('images/hero-fallback.svg') }}" alt="{{ $product->name }}" loading="lazy" decoding="async" width="52" height="52" style="width:52px;height:52px;object-fit:cover;border-radius:0.5rem;flex-shrink:0" onerror="this.onerror=null;this.src='{{ asset('images/hero-fallback.svg') }}'">
                         <div class="flex-grow-1 min-w-0">
                             <div class="fw-bold text-dark text-truncate" style="font-size:0.92rem" title="{{ $product->name }}">{{ $product->name }}</div>
                             <div class="d-flex align-items-center gap-2 flex-wrap small text-muted mt-1">
@@ -234,10 +240,10 @@
                 </thead>
                 <tbody>
                     @forelse($this->products as $product)
-                        <tr>
+                        <tr wire:key="product-desktop-{{ $product->id }}">
                             <td>
                                 <div class="d-flex align-items-center gap-3">
-                                    <img src="{{ $product->primary_image_url }}" style="width:48px;height:48px;object-fit:cover;border-radius:0.5rem" onerror="this.onerror=null;this.src='https://placehold.co/100x100/f1f5f9/94a3b8?text=Product'">
+                                    <img src="{{ $product->primaryImage?->image_url ?? asset('images/hero-fallback.svg') }}" alt="{{ $product->name }}" loading="lazy" decoding="async" width="48" height="48" style="width:48px;height:48px;object-fit:cover;border-radius:0.5rem" onerror="this.onerror=null;this.src='{{ asset('images/hero-fallback.svg') }}'">
                                     <div>
                                         <div class="fw-600 small">{{ $product->name }}</div>
                                         @if($product->sku)

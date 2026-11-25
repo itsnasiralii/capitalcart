@@ -30,6 +30,9 @@ class ProductList extends Component
     public string $stock = '';
 
     #[Url]
+    public string $status = '';
+
+    #[Url]
     public string $sort = 'newest';
 
     public ?int $deleteId = null;
@@ -48,6 +51,13 @@ class ProductList extends Component
     public function updatedCategory(): void { $this->resetPage(); }
     public function updatedStock(): void { $this->resetPage(); }
     public function updatedSort(): void { $this->resetPage(); }
+    public function updatedStatus(): void { $this->resetPage(); }
+
+    public function resetFilters(): void
+    {
+        $this->reset('search', 'category', 'stock', 'status');
+        $this->resetPage();
+    }
 
     public function mount(): void
     {
@@ -70,13 +80,17 @@ class ProductList extends Component
     #[Computed]
     public function categories()
     {
-        return Category::orderBy('name')->get();
+        return Category::orderBy('name')->get(['id', 'name']);
     }
 
     #[Computed]
     public function products()
     {
-        $query = Product::with(['category'])->withTrashed(false);
+        // Avoid one image query per row and loading long descriptions into this list.
+        $query = Product::select([
+            'id', 'category_id', 'name', 'slug', 'sku', 'base_price', 'sale_price',
+            'stock_quantity', 'is_active', 'is_featured', 'created_at',
+        ])->with(['category:id,name', 'images:id,product_id,image_url,is_primary,sort_order']);
 
         if ($this->search) {
             $query->where(function ($q) {
@@ -87,6 +101,10 @@ class ProductList extends Component
 
         if ($this->category) {
             $query->where('category_id', $this->category);
+        }
+
+        if (in_array($this->status, ['enabled', 'disabled'], true)) {
+            $query->where('is_active', $this->status === 'enabled');
         }
 
         if ($this->stock === 'low') {
