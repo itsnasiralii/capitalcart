@@ -54,6 +54,17 @@
         </div>
     </div>
 
+    <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
+        <label for="admin-products-per-page" class="small fw-semibold mb-0">Products per page</label>
+        <select id="admin-products-per-page" wire:model.live="perPage" class="form-select form-select-sm w-auto"
+                wire:loading.attr="disabled" wire:target="perPage">
+            @foreach(\App\Livewire\Admin\Products\ProductList::PAGE_SIZES as $size)
+                <option value="{{ $size }}">{{ $size }}</option>
+            @endforeach
+        </select>
+        <span wire:loading wire:target="perPage" class="small text-muted" role="status">Loading products...</span>
+    </div>
+
     {{-- Bulk Import Modal --}}
     @if($showBulkModal)
         <div class="modal show d-block" style="background:rgba(0,0,0,0.5)">

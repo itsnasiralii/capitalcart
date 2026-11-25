@@ -15,6 +15,11 @@ class ProductList extends Component
 {
     use WithPagination, WithFileUploads;
 
+    public const PAGE_SIZES = [15, 50, 100, 150, 200, 400];
+
+    #[Url]
+    public $perPage = 15;
+
     #[Url]
     public string $search = '';
 
@@ -42,6 +47,25 @@ class ProductList extends Component
     public function updatedSearch(): void { $this->resetPage(); }
     public function updatedCategory(): void { $this->resetPage(); }
     public function updatedStock(): void { $this->resetPage(); }
+    public function updatedSort(): void { $this->resetPage(); }
+
+    public function mount(): void
+    {
+        $this->perPage = $this->pageSize();
+    }
+
+    public function updatedPerPage(): void
+    {
+        $this->perPage = $this->pageSize();
+        $this->resetPage();
+    }
+
+    private function pageSize(): int
+    {
+        $size = filter_var($this->perPage, FILTER_VALIDATE_INT);
+
+        return in_array($size, self::PAGE_SIZES, true) ? $size : 15;
+    }
 
     #[Computed]
     public function categories()
@@ -79,7 +103,7 @@ class ProductList extends Component
             default      => $query->latest(),
         };
 
-        return $query->paginate(15);
+        return $query->orderBy('id', 'desc')->paginate($this->pageSize());
     }
 
     public function toggleActive(int $id): void
