@@ -110,6 +110,88 @@
     <link rel="stylesheet" href="{{ asset('css/storefront-design.css') }}?v={{ filemtime(public_path('css/storefront-design.css')) }}">
     @livewireStyles
     @stack('styles')
+    <style>
+        /* Modern E-Commerce Layout Enhancements (Shopify / Dgenerationz style) */
+        .navbar-marketory .navbar-nav {
+            align-items: center;
+            flex-wrap: nowrap;
+        }
+        .navbar-marketory .navbar-nav .nav-link {
+            white-space: nowrap;
+            padding: 0.4rem 0.65rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .navbar-marketory .dropdown-menu {
+            background: #1E293B !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.35) !important;
+        }
+        .navbar-marketory .dropdown-item:hover {
+            background: rgba(249, 115, 22, 0.15) !important;
+            color: #F97316 !important;
+        }
+
+        /* Modern Navbar Search Bar Component */
+        .navbar-search {
+            min-width: 190px;
+            max-width: 260px;
+            flex-shrink: 0;
+            transition: all 0.25s ease;
+        }
+        @media (min-width: 1400px) {
+            .navbar-search {
+                min-width: 240px;
+                max-width: 320px;
+            }
+        }
+        .navbar-search .search-box {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 9999px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap !important;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+        .navbar-search .search-box:focus-within {
+            background: #0F172A;
+            border-color: #F97316 !important;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25);
+        }
+        .navbar-search .search-input {
+            background: transparent !important;
+            border: none !important;
+            color: #FFFFFF !important;
+            font-size: 0.825rem;
+            padding: 0.4rem 0.5rem 0.4rem 0.95rem;
+            height: 35px;
+            outline: none !important;
+            box-shadow: none !important;
+            min-width: 120px;
+        }
+        .navbar-search .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.825rem;
+        }
+        .navbar-search .search-btn {
+            background: transparent !important;
+            border: none !important;
+            color: rgba(255, 255, 255, 0.65);
+            padding: 0 0.85rem 0 0.4rem;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: color 0.15s ease, transform 0.15s ease;
+        }
+        .navbar-search .search-btn:hover {
+            color: #F97316 !important;
+            transform: scale(1.1);
+        }
+    </style>
 </head>
 <body class="{{ request()->routeIs('portfolio') ? 'portfolio-mode' : '' }}" style="{{ request()->routeIs('portfolio') ? 'background-color: #070B14 !important; color: #E2E8F0 !important;' : '' }}">
 
@@ -164,9 +246,14 @@
                 <li class="nav-item">
                     <a class="nav-link {{ request()->boolean('onSale') ? 'active' : '' }}" href="{{ route('shop', ['onSale' => 1]) }}">Deals</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('portfolio') ? 'active' : '' }}" href="{{ route('portfolio') }}">
+                        <span class="badge rounded-pill me-1" style="background:#F97316;color:#fff;font-size:0.65rem">Dev</span>About Dev<span class="d-none d-xxl-inline">eloper</span>
+                    </a>
+                </li>
             </ul>
             {{-- Mobile Search inside menu --}}
-            <form action="{{ route('shop') }}" method="GET" class="d-lg-none my-3">
+            <form action="{{ route('shop') }}" method="GET" class="d-lg-none my-3" role="search">
                 <div class="input-group">
                     <input type="text" name="search" aria-label="Search products" value="{{ request('search') }}" class="form-control bg-dark text-white border-secondary" placeholder="Search products..." style="font-size:0.875rem; border-radius: 8px 0 0 8px;">
                     <button class="btn btn-accent text-white px-3" type="submit" aria-label="Search" style="background:#F97316; border-radius: 0 8px 8px 0;">
@@ -176,28 +263,47 @@
                     </button>
                 </div>
             </form>
-            <div class="d-flex align-items-center gap-3">
+            <form action="{{ route('shop') }}" method="GET" class="navbar-search d-none d-lg-flex me-2 me-xl-3" role="search">
+                <div class="input-group input-group-sm flex-nowrap search-box w-100">
+                    <input type="text" name="search" aria-label="Search products" value="{{ request('search') }}" class="form-control search-input" placeholder="Search products...">
+                    <button class="btn search-btn" type="submit" aria-label="Search">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+            <div class="d-flex align-items-center gap-2 gap-xxl-3 flex-shrink-0">
                 {{-- Live Visitor Counter --}}
                 @if(setting('show_visitor_counter', 1))
-                    <span class="badge bg-white text-dark border d-none d-lg-inline-flex align-items-center gap-1" style="font-size:0.75rem;padding:0.4rem 0.65rem">
+                    <span class="badge bg-white text-dark border d-none d-xl-inline-flex align-items-center gap-1" style="font-size:0.75rem;padding:0.38rem 0.6rem;border-radius:9999px;">
                         <span style="width:7px;height:7px;border-radius:50%;background:#22C55E;display:inline-block"></span>
-                        <strong>{{ \App\Models\ActiveVisitor::getActiveCount() }}</strong> shoppers online
+                        <strong>{{ \App\Models\ActiveVisitor::getActiveCount() }}</strong> <span class="d-none d-xxl-inline">shoppers online</span><span class="d-inline d-xxl-none">online</span>
                     </span>
                 @endif
 
                 {{-- Cart Icon --}}
                 <livewire:cart.cart-icon />
 
+                {{-- Wishlist --}}
+                @auth
+                    <a href="{{ route('wishlist') }}" class="nav-link position-relative" title="Wishlist" style="color:rgba(255,255,255,0.8)">
+                        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                    </a>
+                @endauth
+
                 {{-- Customer Auth --}}
                 @auth
-                    <span class="text-white-50 small d-none d-md-inline">{{ auth()->user()->name }}</span>
+                    <span class="text-white-50 small d-none d-xxl-inline">{{ auth()->user()->name }}</span>
                     <form action="{{ route('logout') }}" method="POST" class="d-inline">
                         @csrf
-                        <button class="btn btn-sm btn-outline-light">Logout</button>
+                        <button class="btn btn-sm btn-outline-light" style="padding:0.32rem 0.65rem;font-size:0.8rem;">Logout</button>
                     </form>
                 @else
-                    <a href="{{ route('login') }}" class="btn btn-sm btn-outline-light">Login</a>
-                    <a href="{{ route('register') }}" class="btn btn-sm" style="background:#F97316;color:#fff">Register</a>
+                    <a href="{{ route('login') }}" class="btn btn-sm btn-outline-light" style="padding:0.32rem 0.65rem;font-size:0.8rem;">Login</a>
+                    <a href="{{ route('register') }}" class="btn btn-sm text-white" style="background:#F97316;padding:0.32rem 0.75rem;font-size:0.8rem;white-space:nowrap;">Register</a>
                 @endauth
             </div>
         </div>
