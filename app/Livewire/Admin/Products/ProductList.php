@@ -37,6 +37,9 @@ class ProductList extends Component
 
     public ?int $deleteId = null;
 
+    public array $selectedProducts = [];
+    public bool $selectAllOnPage = false;
+
     // Bulk Import properties
     public bool $showBulkModal = false;
     public $csvFile = null;
@@ -47,16 +50,39 @@ class ProductList extends Component
     public bool $isImporting = false;
     public string $importFeedback = '';
 
-    public function updatedSearch(): void { $this->resetPage(); }
-    public function updatedCategory(): void { $this->resetPage(); }
-    public function updatedStock(): void { $this->resetPage(); }
-    public function updatedSort(): void { $this->resetPage(); }
-    public function updatedStatus(): void { $this->resetPage(); }
+    public function updatedSearch(): void { $this->resetPage(); $this->selectAllOnPage = false; }
+    public function updatedCategory(): void { $this->resetPage(); $this->selectAllOnPage = false; }
+    public function updatedStock(): void { $this->resetPage(); $this->selectAllOnPage = false; }
+    public function updatedSort(): void { $this->resetPage(); $this->selectAllOnPage = false; }
+    public function updatedStatus(): void { $this->resetPage(); $this->selectAllOnPage = false; }
 
     public function resetFilters(): void
     {
         $this->reset('search', 'category', 'stock', 'status');
         $this->resetPage();
+        $this->selectAllOnPage = false;
+    }
+
+    public function updatingPage(): void
+    {
+        $this->selectAllOnPage = false;
+    }
+
+    public function updatedSelectAllOnPage(bool $value): void
+    {
+        $pageIds = $this->products->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $current = array_map('intval', $this->selectedProducts);
+        if ($value) {
+            $this->selectedProducts = array_values(array_unique(array_merge($current, $pageIds)));
+        } else {
+            $this->selectedProducts = array_values(array_diff($current, $pageIds));
+        }
+    }
+
+    public function clearSelection(): void
+    {
+        $this->selectedProducts = [];
+        $this->selectAllOnPage = false;
     }
 
     public function mount(): void
@@ -68,6 +94,7 @@ class ProductList extends Component
     {
         $this->perPage = $this->pageSize();
         $this->resetPage();
+        $this->selectAllOnPage = false;
     }
 
     private function pageSize(): int
@@ -129,6 +156,54 @@ class ProductList extends Component
         $product = Product::findOrFail($id);
         $product->update(['is_active' => !$product->is_active]);
         $this->dispatch('show-toast', message: 'Product status updated.', type: 'success');
+    }
+
+    public function bulkSetStatus(bool $active): void
+    {
+        $ids = array_map('intval', $this->selectedProducts);
+        if (empty($ids)) {
+            $this->dispatch('show-toast', message: 'No products selected.', type: 'warning');
+            return;
+        }
+
+        $count = Product::whereIn('id', $ids)->update(['is_active' => $active]);
+        $action = $active ? 'enabled' : 'disabled';
+        $this->dispatch('show-toast', message: "Successfully {$action} {$count} product(s).", type: 'success');
+        $this->clearSelection();
+    }
+
+    public function enableSelected(): void
+    {
+        $this->bulkSetStatus(true);
+    }
+
+    public function disableSelected(): void
+    {
+        $this->bulkSetStatus(false);
+    }
+
+    public function setPageStatus(bool $active): void
+    {
+        $pageIds = $this->products->pluck('id')->all();
+        if (empty($pageIds)) {
+            $this->dispatch('show-toast', message: 'No products on this page.', type: 'warning');
+            return;
+        }
+
+        $count = Product::whereIn('id', $pageIds)->update(['is_active' => $active]);
+        $action = $active ? 'enabled' : 'disabled';
+        $this->dispatch('show-toast', message: "All {$count} products on this page {$action}.", type: 'success');
+        $this->clearSelection();
+    }
+
+    public function enablePageProducts(): void
+    {
+        $this->setPageStatus(true);
+    }
+
+    public function disablePageProducts(): void
+    {
+        $this->setPageStatus(false);
     }
 
     public function confirmDelete(int $id): void

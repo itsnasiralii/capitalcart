@@ -62,14 +62,54 @@
             <option value="disabled">Disabled only</option>
         </select>
         <label for="admin-products-per-page" class="small fw-semibold mb-0">Products per page</label>
-        <select id="admin-products-per-page" wire:model.live="perPage" class="form-select form-select-sm w-auto"
+        <select id="admin-products-per-page" wire:model.live="perPage" class="form-select form-select-sm w-auto me-sm-2"
                 wire:loading.attr="disabled" wire:target="perPage">
             @foreach(\App\Livewire\Admin\Products\ProductList::PAGE_SIZES as $size)
                 <option value="{{ $size }}">{{ $size }}</option>
             @endforeach
         </select>
-        <span wire:loading.delay wire:target="perPage,status,search,category,stock,sort,resetFilters" class="small text-muted" role="status">Loading products...</span>
+        <span wire:loading.delay wire:target="perPage,status,search,category,stock,sort,resetFilters,enablePageProducts,disablePageProducts,enableSelected,disableSelected" class="small text-muted" role="status">Processing...</span>
+
+        <div class="dropdown ms-auto">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle d-inline-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                Page Bulk Actions
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                <li><button class="dropdown-item d-flex align-items-center gap-2 text-success small" type="button" wire:click="enablePageProducts">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    Enable all on this page ({{ $this->products->count() }})
+                </button></li>
+                <li><button class="dropdown-item d-flex align-items-center gap-2 text-danger small" type="button" wire:click="disablePageProducts">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                    Disable all on this page ({{ $this->products->count() }})
+                </button></li>
+            </ul>
+        </div>
     </div>
+
+    {{-- Selected Products Action Banner --}}
+    @if(count($selectedProducts) > 0)
+        <div class="alert alert-primary d-flex align-items-center justify-content-between flex-wrap gap-2 py-2 px-3 mb-3 border-0 shadow-sm" style="background:#eff6ff;border-left:4px solid #2563eb !important;border-radius:0.5rem;">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary rounded-pill px-2 py-1">{{ count($selectedProducts) }}</span>
+                <span class="small fw-semibold text-primary">products selected</span>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button wire:click="enableSelected" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1 shadow-sm" wire:loading.attr="disabled">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    Enable Selected ({{ count($selectedProducts) }})
+                </button>
+                <button wire:click="disableSelected" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 bg-white" wire:loading.attr="disabled">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                    Disable Selected ({{ count($selectedProducts) }})
+                </button>
+                <button wire:click="clearSelection" class="btn btn-sm btn-link text-muted text-decoration-none">
+                    Clear selection
+                </button>
+            </div>
+        </div>
+    @endif
 
     {{-- Bulk Import Modal --}}
     @if($showBulkModal)
@@ -174,9 +214,21 @@
     <div class="admin-table bg-white rounded-3 border overflow-hidden">
         {{-- Mobile Cards View (Below md breakpoint) --}}
         <div class="d-md-none">
+            <div class="p-2 px-3 bg-light border-bottom d-flex align-items-center justify-content-between">
+                <div class="form-check mb-0">
+                    <input type="checkbox" class="form-check-input" id="mobileSelectAll" wire:model.live="selectAllOnPage">
+                    <label class="form-check-label small fw-semibold" for="mobileSelectAll">Select all on this page</label>
+                </div>
+                @if(count($selectedProducts) > 0)
+                    <span class="badge bg-primary">{{ count($selectedProducts) }} selected</span>
+                @endif
+            </div>
             @forelse($this->products as $product)
                 <div class="p-3 border-bottom" wire:key="product-mobile-{{ $product->id }}">
-                    <div class="d-flex align-items-start gap-3 mb-2">
+                    <div class="d-flex align-items-start gap-2 mb-2">
+                        <div class="pt-2">
+                            <input type="checkbox" class="form-check-input" value="{{ $product->id }}" wire:model.live="selectedProducts">
+                        </div>
                         <img src="{{ $product->primaryImage?->image_url ?? asset('images/hero-fallback.svg') }}" alt="{{ $product->name }}" loading="lazy" decoding="async" width="52" height="52" style="width:52px;height:52px;object-fit:cover;border-radius:0.5rem;flex-shrink:0" onerror="this.onerror=null;this.src='{{ asset('images/hero-fallback.svg') }}'">
                         <div class="flex-grow-1 min-w-0">
                             <div class="fw-bold text-dark text-truncate" style="font-size:0.92rem" title="{{ $product->name }}">{{ $product->name }}</div>
@@ -230,6 +282,9 @@
             <table class="table table-borderless mb-0">
                 <thead>
                     <tr>
+                        <th style="width: 40px;">
+                            <input type="checkbox" class="form-check-input" wire:model.live="selectAllOnPage" title="Select / deselect all on this page">
+                        </th>
                         <th>Product</th>
                         <th>Category</th>
                         <th>Price</th>
@@ -241,6 +296,9 @@
                 <tbody>
                     @forelse($this->products as $product)
                         <tr wire:key="product-desktop-{{ $product->id }}">
+                            <td>
+                                <input type="checkbox" class="form-check-input" value="{{ $product->id }}" wire:model.live="selectedProducts">
+                            </td>
                             <td>
                                 <div class="d-flex align-items-center gap-3">
                                     <img src="{{ $product->primaryImage?->image_url ?? asset('images/hero-fallback.svg') }}" alt="{{ $product->name }}" loading="lazy" decoding="async" width="48" height="48" style="width:48px;height:48px;object-fit:cover;border-radius:0.5rem" onerror="this.onerror=null;this.src='{{ asset('images/hero-fallback.svg') }}'">
@@ -282,7 +340,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-5">
+                            <td colspan="7" class="text-center text-muted py-5">
                                 No products found. Use <strong>+ Add Product</strong> or <strong>Bulk Import CSV</strong> to add products.
                             </td>
                         </tr>
